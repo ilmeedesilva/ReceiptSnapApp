@@ -96,7 +96,7 @@ struct AuthCoordinatorView: View {
                 onMaybeLater: {
                     appState.skipBiometricSetup()
                     if let user = appState.pendingUser { appState.signIn(user: user) }
-                    else { appState.isAuthenticated = true }   // already signed in via login
+                    else { appState.isAuthenticated = true }  
                 }
             )
 
@@ -123,7 +123,7 @@ struct AuthCoordinatorView: View {
 
         case .passcodeSuccess:
             PasscodeSuccessView(onContinue: {
-                appState.skipBiometricSetup()  // passcode saved in Keychain
+                appState.skipBiometricSetup() 
                 if let user = appState.pendingUser { appState.signIn(user: user) }
                 else { appState.isAuthenticated = true }
             })
