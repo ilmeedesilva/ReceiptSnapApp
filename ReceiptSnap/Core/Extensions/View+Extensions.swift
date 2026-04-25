@@ -32,7 +32,6 @@ extension View {
     }
 }
 
-// MARK: - Shake Modifier
 struct ShakeModifier: AnimatableModifier {
     var animatableData: CGFloat
 

@@ -25,7 +25,6 @@ struct LoadingOverlay: View {
     }
 }
 
-// MARK: - View modifier for conditional overlay
 extension View {
     func loadingOverlay(isLoading: Bool, message: String = "Please wait…") -> some View {
         overlay {
