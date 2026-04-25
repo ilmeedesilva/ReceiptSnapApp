@@ -1,12 +1,3 @@
-// FirebaseBudgetService.swift
-// ReceiptSnap — Firestore implementation of BudgetServiceProtocol.
-//
-// SETUP:
-//   1. Firestore package must be added (see FirebaseAuthService.swift header).
-//   2. In ServiceLocator.swift change:
-//          budgetService = MockBudgetService()
-//      to:
-//          budgetService = FirebaseBudgetService()
 
 import Foundation
 import FirebaseFirestore

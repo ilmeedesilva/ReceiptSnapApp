@@ -1,6 +1,3 @@
-// MockReceiptService.swift
-// ReceiptSnap — In-memory receipt service for unit tests and development.
-// All mutations are reflected immediately in mockReceipts.
 
 import Foundation
 import UIKit

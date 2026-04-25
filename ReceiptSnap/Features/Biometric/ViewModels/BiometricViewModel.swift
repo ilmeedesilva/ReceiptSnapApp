@@ -9,20 +9,20 @@ final class BiometricViewModel: ObservableObject {
     @Published var authSuccess:      Bool   = false
     @Published var errorMessage:     String? = nil
 
-    // MARK: - Passcode flow
-    @Published var passcodeDigits:  String  = ""   // current step input
-    @Published var passcodeConfirm: String  = ""   // confirmation step input
+   
+    @Published var passcodeDigits:  String  = ""   
+    @Published var passcodeConfirm: String  = ""  
     @Published var passcodeStep:    PasscodeStep = .create
     @Published var passcodeError:   String? = nil
     @Published var passcodeSuccess: Bool    = false
 
     enum PasscodeStep { case create, confirm }
 
-    // MARK: - Computed
+
     var biometricType:         BiometricType { biometricService.biometricType }
     var isBiometricAvailable:  Bool          { biometricService.isBiometricAvailable }
 
-    // MARK: - Dependencies
+
     private let biometricService: BiometricServiceProtocol
     private let keychain: KeychainService
 
@@ -34,9 +34,6 @@ final class BiometricViewModel: ObservableObject {
         self.keychain         = keychain
     }
 
-    // MARK: - Biometric Authentication
-
-    /// Triggers the system Face ID / Touch ID prompt.
     func authenticateWithBiometrics() async -> Bool {
         isAuthenticating = true
         errorMessage     = nil
@@ -59,8 +56,6 @@ final class BiometricViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Passcode Setup
-
     func appendDigit(_ digit: String) {
         passcodeError = nil
         switch passcodeStep {
@@ -80,7 +75,6 @@ final class BiometricViewModel: ObservableObject {
         }
     }
 
-    /// Advances from create → confirm, or finalises passcode. Returns true when saved.
     @discardableResult
     func advancePasscode() -> Bool {
         switch passcodeStep {

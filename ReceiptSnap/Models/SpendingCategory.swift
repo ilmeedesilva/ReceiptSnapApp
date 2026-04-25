@@ -1,5 +1,3 @@
-// SpendingCategory.swift
-// ReceiptSnap — Aggregated spending total per category (used in chart + quick summary).
 
 import Foundation
 

@@ -1,12 +1,7 @@
-// ReceiptServiceProtocol.swift
-// ReceiptSnap — Contract for receipt CRUD operations.
-// ViewModels depend only on this protocol; swap FirebaseReceiptService ↔ MockReceiptService
-// by changing the binding in ServiceLocator.
 
 import Foundation
 import UIKit
 
-// MARK: - Protocol
 
 protocol ReceiptServiceProtocol: AnyObject {
 

@@ -1,10 +1,7 @@
-// CalendarServiceProtocol.swift
-// ReceiptSnap — EventKit integration for calendar-based receipt reminders.
 
 import Foundation
 import EventKit
 
-// MARK: - Matched event
 
 struct CalendarEvent {
     let title:     String
@@ -13,7 +10,6 @@ struct CalendarEvent {
     let eventID:   String
 }
 
-// MARK: - Protocol
 
 protocol CalendarServiceProtocol: AnyObject {
     /// Request EventKit access.
@@ -26,7 +22,6 @@ protocol CalendarServiceProtocol: AnyObject {
     func scheduleReminder(for event: CalendarEvent, delay: TimeInterval) async throws
 }
 
-// MARK: - Implementation
 
 final class EventKitCalendarService: CalendarServiceProtocol {
 

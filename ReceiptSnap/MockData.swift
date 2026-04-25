@@ -1,10 +1,3 @@
-// MockData.swift
-// ReceiptSnap — Centralized demo data for development and video demos.
-//
-// ✏️  EDIT THIS FILE to change what the app shows when it first launches.
-//     All data is in-memory only and resets if you reinstall the app.
-//     Real data added through the app is layered on top of this — not replaced.
-
 import Foundation
 
 enum MockData {

@@ -1,11 +1,8 @@
-// NotificationServiceProtocol.swift
-// ReceiptSnap — Contract for scheduling and managing local push notifications.
 
 import Foundation
 import CoreData
 import UserNotifications
 
-// MARK: - Protocol
 
 protocol NotificationServiceProtocol: AnyObject {
     /// Request push notification permission from the user.
@@ -30,7 +27,6 @@ protocol NotificationServiceProtocol: AnyObject {
     func markRead(id: UUID)
 }
 
-// MARK: - UNUserNotifications implementation
 
 final class LocalNotificationService: NSObject, NotificationServiceProtocol,
                                        UNUserNotificationCenterDelegate {

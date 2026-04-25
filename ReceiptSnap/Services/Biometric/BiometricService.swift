@@ -1,10 +1,7 @@
-// BiometricService.swift
-// ReceiptSnap — LocalAuthentication wrapper for Face ID / Touch ID.
 
 import LocalAuthentication
 import Foundation
 
-// MARK: - Type
 enum BiometricType {
     case faceID, touchID, none
 
@@ -25,14 +22,12 @@ enum BiometricType {
     }
 }
 
-// MARK: - Protocol
 protocol BiometricServiceProtocol {
     var biometricType: BiometricType { get }
     var isBiometricAvailable: Bool   { get }
     func authenticate(reason: String) async throws -> Bool
 }
 
-// MARK: - Errors
 enum BiometricError: LocalizedError {
     case notAvailable
     case notEnrolled
@@ -53,7 +48,6 @@ enum BiometricError: LocalizedError {
     }
 }
 
-// MARK: - Implementation
 final class BiometricService: BiometricServiceProtocol {
 
     var biometricType: BiometricType {
@@ -98,7 +92,6 @@ final class BiometricService: BiometricServiceProtocol {
     }
 }
 
-// MARK: - Mock (for tests / simulators)
 final class MockBiometricService: BiometricServiceProtocol {
     var biometricType: BiometricType = .faceID
     var isBiometricAvailable: Bool   = true

@@ -1,27 +1,3 @@
-// FirebaseAuthService.swift
-// ReceiptSnap — Firebase Auth + Firestore implementation of AuthServiceProtocol.
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// SETUP INSTRUCTIONS (required before this file will compile):
-//
-//  1. In Xcode: File ▸ Add Package Dependencies…
-//     URL: https://github.com/firebase/firebase-ios-sdk
-//     Select: FirebaseAuth  +  FirebaseFirestore
-//
-//  2. In Xcode: File ▸ Add Package Dependencies…
-//     URL: https://github.com/google/GoogleSignIn-iOS
-//     Select: GoogleSignIn
-//
-//  3. Download GoogleService-Info.plist from Firebase Console
-//     and drag it into the ReceiptSnap target (check "Add to target").
-//
-//  4. In ServiceLocator.swift change:
-//         authService = MockAuthService()
-//     to:
-//         authService = FirebaseAuthService()
-//
-//  5. Uncomment FirebaseApp.configure() in ReceiptSnapApp.swift.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import Foundation
 import UIKit

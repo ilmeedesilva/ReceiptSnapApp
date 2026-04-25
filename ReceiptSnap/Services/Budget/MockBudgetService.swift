@@ -1,5 +1,3 @@
-// MockBudgetService.swift
-// ReceiptSnap — In-memory budget service for unit tests and development.
 
 import Foundation
 

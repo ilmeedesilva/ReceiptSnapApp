@@ -1,10 +1,6 @@
-// ReportServiceProtocol.swift
-// ReceiptSnap — Contract + pure-function implementation for report generation.
-// All calculations are side-effect free — no network calls, fully unit-testable.
 
 import Foundation
 
-// MARK: - Protocol
 
 protocol ReportServiceProtocol: AnyObject {
     func weeklyReport(receipts: [Receipt], weekStart: Date) -> WeeklyReportData
@@ -13,7 +9,6 @@ protocol ReportServiceProtocol: AnyObject {
     func insightStrings(receipts: [Receipt], month: Int, year: Int) -> [String]
 }
 
-// MARK: - Implementation
 
 final class ReportService: ReportServiceProtocol {
 

@@ -1,17 +1,12 @@
-// SplitService.swift
-// ReceiptSnap — Pure-function split expense calculations.
-// No network calls — all methods are synchronous and fully unit-testable.
 
 import Foundation
 
-// MARK: - Validation result
 
 struct SplitValidation {
     let isValid: Bool
     let errorMessage: String?
 }
 
-// MARK: - Service
 
 final class SplitService {
 

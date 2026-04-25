@@ -1,12 +1,3 @@
-// FirebaseReceiptService.swift
-// ReceiptSnap — Firestore + Firebase Storage implementation of ReceiptServiceProtocol.
-//
-// SETUP:
-//   1. Add Firebase package (firebase-ios-sdk): FirebaseFirestore + FirebaseStorage
-//   2. In ServiceLocator.swift change:
-//          receiptService = MockReceiptService()
-//      to:
-//          receiptService = FirebaseReceiptService()
 
 import Foundation
 import UIKit

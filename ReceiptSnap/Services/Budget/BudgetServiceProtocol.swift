@@ -1,10 +1,6 @@
-// BudgetServiceProtocol.swift
-// ReceiptSnap — Contract for budget data operations.
-// ViewModels depend only on this protocol; swap Firebase ↔ Mock via ServiceLocator.
 
 import Foundation
 
-// MARK: - Protocol
 
 protocol BudgetServiceProtocol: AnyObject {
 
@@ -36,7 +32,6 @@ protocol BudgetServiceProtocol: AnyObject {
                            receipts: [Receipt]) -> [SpendingCategory]
 }
 
-// MARK: - Default implementations (pure logic — no async needed)
 
 extension BudgetServiceProtocol {
 

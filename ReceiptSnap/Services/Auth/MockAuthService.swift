@@ -1,6 +1,3 @@
-// MockAuthService.swift
-// ReceiptSnap — In-memory auth implementation used for development and unit tests.
-// Replace with FirebaseAuthService in production (see ServiceLocator.swift).
 
 import Foundation
 

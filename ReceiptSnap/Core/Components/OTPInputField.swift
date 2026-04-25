@@ -47,7 +47,6 @@ struct OTPInputField: View {
     }
 }
 
-// MARK: - Single Cell
 private struct OTPCell: View {
     @Binding var text: String
     let isFocused: Bool

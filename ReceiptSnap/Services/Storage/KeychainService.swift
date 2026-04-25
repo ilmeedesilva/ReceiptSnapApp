@@ -1,5 +1,3 @@
-// KeychainService.swift
-// ReceiptSnap — Secure Keychain wrapper for passcode and session data.
 
 import Foundation
 import Security

@@ -1,10 +1,6 @@
-// AuthServiceProtocol.swift
-// ReceiptSnap — Protocol that decouples auth logic from Firebase/any backend.
-// ViewModels depend on this protocol; FirebaseAuthService or MockAuthService are injected.
 
 import Foundation
 
-// MARK: - Protocol
 protocol AuthServiceProtocol: AnyObject {
     /// Sign in with email and password. Returns authenticated AppUser.
     func signIn(email: String, password: String) async throws -> AppUser
@@ -35,7 +31,6 @@ protocol AuthServiceProtocol: AnyObject {
     func signInWithGoogle() async throws -> AppUser
 }
 
-// MARK: - Auth Errors
 enum AuthError: LocalizedError {
     case invalidEmail
     case wrongPassword

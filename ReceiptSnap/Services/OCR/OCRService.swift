@@ -1,17 +1,8 @@
-// OCRService.swift
-// ReceiptSnap — Vision framework OCR implementation.
-//
-// Flow:
-//   1. Caller provides UIImage (camera or gallery).
-//   2. VisionOCRService runs VNRecognizeTextRequest on a background thread.
-//   3. Returns OCRResult with extracted merchant, amount, and date strings.
-//   4. ViewModel populates the Add/Edit Receipt form fields.
 
 import Foundation
 import UIKit
 import Vision
 
-// MARK: - Result model
 
 struct OCRResult {
     var merchantName: String?   // first non-numeric line, usually the merchant
@@ -20,14 +11,12 @@ struct OCRResult {
     var rawText:      String    // full recognised text (for debugging / manual review)
 }
 
-// MARK: - Protocol
 
 protocol OCRServiceProtocol: AnyObject {
     /// Recognise text in `image` and return structured OCRResult.
     func recognise(image: UIImage) async throws -> OCRResult
 }
 
-// MARK: - Vision implementation
 
 final class VisionOCRService: OCRServiceProtocol {
 

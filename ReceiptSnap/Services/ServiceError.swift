@@ -1,6 +1,3 @@
-// ServiceError.swift
-// ReceiptSnap — Shared error type used by all service layers.
-// Using a single enum keeps error handling consistent across ViewModels.
 
 import Foundation
 

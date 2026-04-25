@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Hex initialisers
 
 extension Color {
     init(hex: String) {
@@ -48,7 +47,6 @@ extension UIColor {
     }
 }
 
-// MARK: - ReceiptSnap Palette (adaptive light / dark)
 
 extension Color {
     // Background

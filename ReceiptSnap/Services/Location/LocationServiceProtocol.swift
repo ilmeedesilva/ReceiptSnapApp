@@ -1,11 +1,8 @@
-// LocationServiceProtocol.swift
-// ReceiptSnap — MapKit/CoreLocation geofencing for location-based receipt reminders.
 
 import Foundation
 import CoreLocation
 import MapKit
 
-// MARK: - Protocol
 
 protocol LocationServiceProtocol: AnyObject {
     /// Request always-on location permission (required for geofencing).
@@ -26,7 +23,6 @@ protocol LocationServiceProtocol: AnyObject {
                        region: MKCoordinateRegion) async throws -> [MKMapItem]
 }
 
-// MARK: - Implementation
 
 final class LocationService: NSObject, LocationServiceProtocol, CLLocationManagerDelegate {
 
@@ -102,5 +98,4 @@ final class LocationService: NSObject, LocationServiceProtocol, CLLocationManage
     }
 }
 
-// Needed for UNUserNotificationCenter usage in LocationService
 import UserNotifications

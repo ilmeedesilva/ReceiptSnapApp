@@ -1,10 +1,6 @@
-// SearchService.swift
-// ReceiptSnap — Pure-function search and filter logic.
-// All methods are synchronous and side-effect free — fully unit-testable.
 
 import Foundation
 
-// MARK: - Filter parameters
 
 struct ReceiptFilter: Equatable {
     var searchText:      String                = ""
@@ -21,7 +17,6 @@ struct ReceiptFilter: Equatable {
     }
 }
 
-// MARK: - Service
 
 final class SearchService {
 

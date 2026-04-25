@@ -1,12 +1,3 @@
-// ServiceLocator.swift
-// ReceiptSnap — Lightweight dependency registry.
-//
-// All services are lazy so they only initialise on first access.
-// Swap an implementation here to change the whole app's behaviour — no VM changes needed.
-//
-// To plug in Firebase services:
-//   1. Complete Firebase setup (see FirebaseAuthService.swift header for steps)
-//   2. Replace Mock*Service() instances below with their Firebase counterparts.
 
 import Foundation
 
