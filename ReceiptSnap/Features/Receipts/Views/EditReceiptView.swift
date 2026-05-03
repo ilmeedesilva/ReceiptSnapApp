@@ -4,7 +4,7 @@ import PhotosUI
 struct EditReceiptView: View {
 
     let receipt:  Receipt
-    let onSaved:  (Receipt) -> Void
+    let onSaved:  (Receipt, UIImage?) -> Void
     let onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +16,7 @@ struct EditReceiptView: View {
     @State private var notes:         String
     @State private var isFavorite:    Bool
 
+
     @State private var splitEnabled:      Bool
     @State private var splitWithName:     String
     @State private var splitContact:      String
@@ -23,13 +24,15 @@ struct EditReceiptView: View {
     @State private var customAmountYou:   String
     @State private var customAmountOther: String
 
+
     @State private var selectedImage:  UIImage?       = nil
     @State private var photosItem:     PhotosPickerItem? = nil
     @State private var showCamera:     Bool           = false
     @State private var showDeleteConfirm = false
     @State private var showSavedToast    = false
 
-    init(receipt: Receipt, onSaved: @escaping (Receipt) -> Void, onDelete: @escaping () -> Void) {
+
+    init(receipt: Receipt, onSaved: @escaping (Receipt, UIImage?) -> Void, onDelete: @escaping () -> Void) {
         self.receipt  = receipt
         self.onSaved  = onSaved
         self.onDelete = onDelete
@@ -62,9 +65,10 @@ struct EditReceiptView: View {
         return "Other"
     }
 
+
     var body: some View {
         ZStack(alignment: .top) {
-        
+
             if showSavedToast {
                 VStack {
                     HStack(spacing: 8) {
@@ -125,6 +129,7 @@ struct EditReceiptView: View {
         }
     }
 
+
     private var navBar: some View {
         HStack {
             Button { dismiss() } label: {
@@ -153,14 +158,24 @@ struct EditReceiptView: View {
                     Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
+                } else if let imageURL = receiptImageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .empty:
+                            ZStack {
+                                placeholderImage
+                                ProgressView()
+                            }
+                        default:
+                            placeholderImage
+                        }
+                    }
                 } else {
-                    RoundedRectangle(cornerRadius: AppTheme.Radius.card)
-                        .fill(Color.rsDivider)
-                        .overlay(
-                            Image(systemName: "doc.text.fill")
-                                .font(.system(size: 48))
-                                .foregroundColor(.rsTextMuted)
-                        )
+                    placeholderImage
                 }
             }
             .frame(maxWidth: .infinity)
@@ -182,6 +197,24 @@ struct EditReceiptView: View {
                 .padding(AppTheme.Spacing.sm)
             }
         }
+    }
+
+    private var receiptImageURL: URL? {
+        guard let imageURL = receipt.imageURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !imageURL.isEmpty else {
+            return nil
+        }
+        return URL(string: imageURL)
+    }
+
+    private var placeholderImage: some View {
+        RoundedRectangle(cornerRadius: AppTheme.Radius.card)
+            .fill(Color.rsDivider)
+            .overlay(
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.rsTextMuted)
+            )
     }
 
 
@@ -371,9 +404,10 @@ struct EditReceiptView: View {
                     notes: notes, isFavorite: isFavorite,
                     imageURL: receipt.imageURL, splitDetail: split
                 )
+
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { showSavedToast = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    onSaved(updated)
+                    onSaved(updated, selectedImage)
                 }
             } label: {
                 Text("Save Changes")
@@ -407,6 +441,7 @@ struct EditReceiptView: View {
 }
 
 
+
 private extension View {
     func editInputStyle() -> some View {
         self
@@ -427,7 +462,7 @@ private extension View {
     NavigationStack {
         EditReceiptView(
             receipt:  Receipt.mockReceipts().first!,
-            onSaved:  { _ in },
+            onSaved:  { _, _ in },
             onDelete: {}
         )
     }

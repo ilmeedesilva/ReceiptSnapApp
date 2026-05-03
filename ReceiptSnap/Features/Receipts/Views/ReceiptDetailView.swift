@@ -9,6 +9,7 @@ struct ReceiptDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirm = false
+    @State private var showFullImage = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -40,7 +41,39 @@ struct ReceiptDetailView: View {
         } message: {
             Text("This action cannot be undone. You will lose all data associated with this receipt.")
         }
+        .fullScreenCover(isPresented: $showFullImage) {
+            if let imageURL = receiptImageURL {
+                ZStack(alignment: .topTrailing) {
+                    Color.black.ignoresSafeArea()
+
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        case .empty:
+                            ProgressView()
+                                .tint(.white)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        default:
+                            placeholderImage
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
+
+                    Button { showFullImage = false } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                }
+            }
+        }
     }
+
 
     private var navBar: some View {
         HStack {
@@ -65,25 +98,60 @@ struct ReceiptDetailView: View {
 
     private var receiptImageSection: some View {
         ZStack(alignment: .bottomTrailing) {
-            RoundedRectangle(cornerRadius: AppTheme.Radius.card)
-                .fill(Color.rsDivider)
-                .frame(height: 200)
-                .overlay(
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 48))
-                        .foregroundColor(.rsTextMuted)
-                )
-
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.85))
-                    .frame(width: 32, height: 32)
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14))
-                    .foregroundColor(.rsDeepGreen)
+            Group {
+                if let imageURL = receiptImageURL {
+                    Button { showFullImage = true } label: {
+                        AsyncImage(url: imageURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            case .empty:
+                                ZStack {
+                                    placeholderImage
+                                    ProgressView()
+                                }
+                            default:
+                                placeholderImage
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    placeholderImage
+                }
             }
-            .padding(AppTheme.Spacing.sm)
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.card))
+
+            if receiptImageURL != nil {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.85))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14))
+                        .foregroundColor(.rsDeepGreen)
+                }
+                .padding(AppTheme.Spacing.sm)
+            }
         }
+    }
+
+    private var receiptImageURL: URL? {
+        guard let imageURL = receipt.imageURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !imageURL.isEmpty else {
+            return nil
+        }
+        return URL(string: imageURL)
+    }
+
+    private var placeholderImage: some View {
+        Image("receipt")
+            .resizable()
+            .scaledToFill()
     }
 
 
@@ -137,6 +205,7 @@ struct ReceiptDetailView: View {
         }
     }
 
+
     private var favoriteRow: some View {
         HStack {
             Image(systemName: receipt.isFavorite ? "star.fill" : "star")
@@ -153,6 +222,7 @@ struct ReceiptDetailView: View {
         }
         .rsCardStyle()
     }
+
 
     private var actionButtons: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
