@@ -90,7 +90,7 @@ struct AddReceiptView: View {
         .animation(.easeInOut(duration: 0.25), value: showScanning)
         .sheet(isPresented: $showSavedSheet, onDismiss: {
             dismiss()
-
+        
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 switch postSaveDest {
                 case .receipts:  NotificationCenter.default.post(name: .switchToReceipts,  object: nil)
@@ -232,6 +232,7 @@ struct AddReceiptView: View {
     private var formSection: some View {
         VStack(spacing: AppTheme.Spacing.md) {
 
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Merchant")
                     .font(.system(size: AppTheme.Font.caption, weight: .semibold))
@@ -295,6 +296,7 @@ struct AddReceiptView: View {
                 }
             }
 
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Notes")
                     .font(.system(size: AppTheme.Font.caption, weight: .semibold))
@@ -327,6 +329,7 @@ struct AddReceiptView: View {
 
     private var favoriteSplitSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
+
             HStack {
                 Image(systemName: isFavorite ? "star.fill" : "star")
                     .foregroundColor(isFavorite ? .yellow : .rsTextSecondary)
@@ -339,6 +342,7 @@ struct AddReceiptView: View {
                     .tint(Color.rsForestGreen)
             }
             .rsCardStyle()
+
 
             HStack {
                 ZStack {
@@ -365,6 +369,7 @@ struct AddReceiptView: View {
             .rsCardStyle()
         }
     }
+
 
 
     private var splitDetailsSection: some View {
@@ -398,6 +403,7 @@ struct AddReceiptView: View {
                 .foregroundColor(.rsTextMuted)
                 .frame(maxWidth: .infinity)
 
+
             HStack {
                 TextField("Enter name", text: $splitWithName)
                     .font(.system(size: AppTheme.Font.body))
@@ -405,6 +411,7 @@ struct AddReceiptView: View {
                     .foregroundColor(.rsTextSecondary)
             }
             .rsInputStyle()
+
 
             HStack(spacing: 0) {
                 ForEach(SplitType.allCases) { type in
@@ -427,7 +434,6 @@ struct AddReceiptView: View {
             if splitType == .custom {
                 customSplitSection
             }
-
             splitPreviewCard
         }
         .rsCardStyle()
@@ -531,6 +537,7 @@ struct AddReceiptView: View {
     }
 
 
+
     private var saveButton: some View {
         Button { handleSave() } label: {
             Text("Save Changes")
@@ -543,6 +550,7 @@ struct AddReceiptView: View {
         }
         .disabled(!canSave)
     }
+
 
     private func handleSave() {
         let name = splitContact.isEmpty ? splitWithName : splitContact
@@ -566,7 +574,7 @@ struct AddReceiptView: View {
         )
 
         Task {
-            await receiptVM.addReceipt(receipt)
+            await receiptVM.addReceipt(receipt, image: selectedImage)
             showSavedSheet = true
         }
     }
@@ -578,6 +586,7 @@ struct AddReceiptView: View {
         let ocrService = ServiceLocator.shared.ocrService
         do {
             let result = try await ocrService.recognise(image: image)
+           
             let elapsed = Date().timeIntervalSince(startTime)
             if elapsed < 3.0 {
                 try? await Task.sleep(nanoseconds: UInt64((3.0 - elapsed) * 1_000_000_000))
@@ -593,6 +602,7 @@ struct AddReceiptView: View {
         }
     }
 }
+
 
 private extension View {
     func rsInputStyle() -> some View {
@@ -687,6 +697,7 @@ private struct ScanningOverlayView: View {
 }
 
 
+
 private struct ReceiptSavedSheet: View {
 
     let merchantName: String
@@ -696,6 +707,7 @@ private struct ReceiptSavedSheet: View {
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
+
             ZStack {
                 Circle()
                     .fill(Color.rsForestGreen.opacity(0.15))
@@ -715,7 +727,7 @@ private struct ReceiptSavedSheet: View {
                     .foregroundColor(.rsTextPrimary)
                     .multilineTextAlignment(.center)
 
-                Text("Your expense from **\(merchantName)** for $\(String(format: "%.2f", amount)) has been added to your records.")
+                Text("Your expense from *\(merchantName)* for $\(String(format: "%.2f", amount)) has been added to your records.")
                     .font(.system(size: AppTheme.Font.body))
                     .foregroundColor(.rsTextSecondary)
                     .multilineTextAlignment(.center)
@@ -749,6 +761,7 @@ private struct ReceiptSavedSheet: View {
     }
 }
 
+
 struct CameraPickerView: UIViewControllerRepresentable {
 
     @Binding var image: UIImage?
@@ -779,6 +792,7 @@ struct CameraPickerView: UIViewControllerRepresentable {
         }
     }
 }
+
 
 #Preview {
     AddReceiptView()
