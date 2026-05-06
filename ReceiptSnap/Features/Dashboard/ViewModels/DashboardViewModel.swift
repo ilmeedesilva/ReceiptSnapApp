@@ -4,6 +4,7 @@ import Combine
 @MainActor
 final class DashboardViewModel: ObservableObject {
 
+
     @Published var budget:             Budget?            = nil
     @Published var totalSpending:      Double             = 0
     @Published var spendingCategories: [SpendingCategory] = []
@@ -12,8 +13,10 @@ final class DashboardViewModel: ObservableObject {
     @Published var isLoading:          Bool               = false
     @Published var errorMessage:       String?            = nil
 
+
     private let budgetService:  BudgetServiceProtocol
     private let receiptService: ReceiptServiceProtocol
+
 
     init(
         budgetService:  BudgetServiceProtocol  = ServiceLocator.shared.budgetService,
@@ -38,24 +41,39 @@ final class DashboardViewModel: ObservableObject {
             await loadMockData(); return
         }
 
-        async let receiptsTask = try? receiptService.fetchReceipts(userId: uid, month: month, year: year)
-        async let budgetTask   = try? budgetService.fetchBudget(userId: uid, month: month, year: year)
-        async let recentTask   = try? receiptService.fetchRecent(userId: uid, limit: 5)
+        do {
+            async let allReceiptsTask = receiptService.fetchReceipts(userId: uid)
+            async let budgetTask = budgetService.fetchBudget(userId: uid, month: month, year: year)
 
-        let receipts = await receiptsTask ?? Receipt.mockReceipts()
-        let recent   = await recentTask   ?? Array(receipts.prefix(5))
+            let allReceipts = try await allReceiptsTask
+            let thisMonthReceipts = allReceipts.filter {
+                let components = cal.dateComponents([.month, .year], from: $0.date)
+                return components.month == month && components.year == year
+            }
 
-        budget             = await budgetTask ?? nil
-        recentReceipts     = recent
-        totalSpending      = receipts.reduce(0) { $0 + abs($1.amount) }
-        spendingCategories = budgetService.categoryBreakdown(userId: uid, month: month,
-                                                              year: year, receipts: receipts)
-        // Update budget's currentSpending if it exists
-        if var b = budget {
-            b.currentSpending = totalSpending
-            budget = b
+            budget = try await budgetTask
+            recentReceipts = Array(allReceipts.sorted { $0.date > $1.date }.prefix(5))
+            totalSpending = thisMonthReceipts.reduce(0) { $0 + abs($1.amount) }
+            spendingCategories = budgetService.categoryBreakdown(
+                userId: uid,
+                month: month,
+                year: year,
+                receipts: allReceipts
+            )
+
+            if var b = budget {
+                b.currentSpending = totalSpending
+                budget = b
+            }
+            reports = ReportItem.mockReports()
+        } catch {
+            budget = nil
+            recentReceipts = []
+            totalSpending = 0
+            spendingCategories = []
+            reports = ReportItem.mockReports()
+            errorMessage = "Could not load dashboard data."
         }
-        reports = ReportItem.mockReports()  
     }
 
 
@@ -71,6 +89,7 @@ final class DashboardViewModel: ObservableObject {
                 )
                 budget = b
             } catch {
+                // Local fallback
                 budget = Budget(userId: userId, monthlyLimit: monthlyLimit,
                                 currentSpending: totalSpending,
                                 period: currentPeriodString())
@@ -90,12 +109,14 @@ final class DashboardViewModel: ObservableObject {
         budget = budget == nil ? Budget.mock() : nil
     }
 
+
     var budgetProgressColor: Color {
         guard let b = budget else { return .rsForestGreen }
         return b.isOverBudget ? .rsError : .rsForestGreen
     }
 
     var hasBudgetWarning: Bool { budget?.isOverBudget ?? false }
+
 
     private func loadMockData() async {
         let cal   = Calendar.current

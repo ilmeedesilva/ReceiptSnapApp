@@ -1,4 +1,3 @@
-
 import Foundation
 import FirebaseFirestore
 
@@ -7,7 +6,6 @@ final class FirebaseBudgetService: BudgetServiceProtocol {
     private let db         = Firestore.firestore()
     private let collection = "budgets"
 
-    // MARK: - Fetch
 
     func fetchBudget(userId: String, month: Int, year: Int) async throws -> Budget? {
         do {
@@ -27,21 +25,27 @@ final class FirebaseBudgetService: BudgetServiceProtocol {
         do {
             let snap = try await db.collection(collection)
                 .whereField("userId", isEqualTo: userId)
-                .order(by: "createdAt", descending: true)
                 .getDocuments()
-            return snap.documents.compactMap { decode($0) }
+            return snap.documents
+                .compactMap { decode($0) }
+                .sorted { lhs, rhs in
+                    if lhs.year == rhs.year { return lhs.month > rhs.month }
+                    return lhs.year > rhs.year
+                }
         } catch {
             throw ServiceError.networkError(error.localizedDescription)
         }
     }
 
-    // MARK: - Mutations
 
     func createBudget(userId: String, monthlyLimit: Double, period: String,
                       alertEnabled: Bool, alertThreshold: Double) async throws -> Budget {
         let budget = Budget(userId: userId, monthlyLimit: monthlyLimit, currentSpending: 0,
                             period: period, alertEnabled: alertEnabled,
                             alertThreshold: alertThreshold)
+        if try await fetchBudget(userId: userId, month: budget.month, year: budget.year) != nil {
+            throw ServiceError.invalidInput("A budget already exists for \(budget.period).")
+        }
         try await write(budget)
         return budget
     }
@@ -59,7 +63,6 @@ final class FirebaseBudgetService: BudgetServiceProtocol {
         }
     }
 
-    // MARK: - Helpers
 
     private func write(_ budget: Budget) async throws {
         let data: [String: Any] = [

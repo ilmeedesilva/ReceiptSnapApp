@@ -1,4 +1,3 @@
-
 import SwiftUI
 import Combine
 import CoreData
@@ -6,61 +5,60 @@ import CoreData
 @MainActor
 final class BudgetViewModel: ObservableObject {
 
-    // MARK: - Form state
 
     @Published var selectedMonth:          String = ""
     @Published var targetAmount:           String = ""
     @Published var overBudgetAlertEnabled: Bool   = true
-    @Published var alertThreshold:         Double = 0.80   // 80 %
+    @Published var alertThreshold:         Double = 0.80   
 
-    // MARK: - Async state
 
     @Published var isLoading:    Bool    = false
     @Published var errorMessage: String? = nil
 
-    // MARK: - Overview data
 
     @Published var budgetHistory: [BudgetHistoryItem] = []
     @Published var weeklyTrend:   [DailySpending]     = []
+    @Published var budgets:       [Budget]            = []
 
-    // MARK: - Callbacks
 
     var onBudgetSaved:   ((Budget) -> Void)?
     var onBudgetDeleted: (() -> Void)?
 
-    // MARK: - Dependencies
-
     private let budgetService:       BudgetServiceProtocol
     private let notificationService: NotificationServiceProtocol
     private let persistence:         PersistenceController
+    private let receiptService:      ReceiptServiceProtocol
 
-    // MARK: - Init
 
     init(
         budgetService:       BudgetServiceProtocol       = ServiceLocator.shared.budgetService,
         notificationService: NotificationServiceProtocol = ServiceLocator.shared.notificationService,
-        persistence:         PersistenceController       = ServiceLocator.shared.persistence
+        persistence:         PersistenceController       = ServiceLocator.shared.persistence,
+        receiptService:      ReceiptServiceProtocol      = ServiceLocator.shared.receiptService
     ) {
         self.budgetService       = budgetService
         self.notificationService = notificationService
         self.persistence         = persistence
+        self.receiptService      = receiptService
 
         let f = DateFormatter(); f.dateFormat = "MMMM"
         selectedMonth = f.string(from: Date())
     }
 
-    // MARK: - Validation
 
     enum ValidationError: LocalizedError {
         case invalidAmount
         var errorDescription: String? { "Please enter a valid amount greater than zero." }
     }
 
-    // MARK: - Public API
 
     func saveBudget(userId: String) async {
         guard let amount = parsedAmount(), amount > 0 else {
             errorMessage = "Please enter a valid amount."; return
+        }
+        guard !userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Please sign in before saving a budget."
+            return
         }
         isLoading    = true
         errorMessage = nil
@@ -75,20 +73,13 @@ final class BudgetViewModel: ObservableObject {
                 alertEnabled:   overBudgetAlertEnabled,
                 alertThreshold: alertThreshold
             )
+            await loadBudgetHistory(userId: userId)
             saveToCoreData(budget)
             onBudgetSaved?(budget)
+        } catch let error as ServiceError {
+            errorMessage = error.errorDescription
         } catch {
-            // Fallback — local only
-            let budget = Budget(
-                userId:         userId,
-                monthlyLimit:   amount,
-                currentSpending: 0,
-                period:         period,
-                alertEnabled:   overBudgetAlertEnabled,
-                alertThreshold: alertThreshold
-            )
-            saveToCoreData(budget)
-            onBudgetSaved?(budget)
+            errorMessage = "Could not save budget. Please try again."
         }
     }
 
@@ -107,17 +98,17 @@ final class BudgetViewModel: ObservableObject {
             currentSpending: existing.currentSpending,
             period:          existing.period,
             alertEnabled:    overBudgetAlertEnabled,
-            alertThreshold:  alertThreshold
+            alertThreshold:  alertThreshold,
+            createdAt:       existing.createdAt
         )
 
         do {
             updated = try await budgetService.updateBudget(updated)
         } catch {
-            // Proceed with local-only update
+        
         }
+        await loadBudgetHistory(userId: userId)
         saveToCoreData(updated)
-
-        // Schedule alert notification if threshold is newly reached
         if updated.hasReachedAlertThreshold || updated.isOverBudget {
             try? await notificationService.scheduleBudgetAlert(budget: updated)
         }
@@ -131,13 +122,15 @@ final class BudgetViewModel: ObservableObject {
 
         do {
             try await budgetService.deleteBudget(id: id, userId: userId)
-        } catch { /* local delete still proceeds */ }
+        } catch {  }
 
+        budgets.removeAll { $0.id == id }
+        budgetHistory.removeAll { $0.id == id }
         deleteFromCoreData(id: id)
         onBudgetDeleted?()
     }
 
-    /// Called after new receipts are added — recalculates spending & fires alerts.
+   
     func refreshSpending(budget: Budget, receipts: [Receipt]) async {
         var updated = budget
         budgetService.recalculateSpending(for: &updated, receipts: receipts)
@@ -154,25 +147,7 @@ final class BudgetViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        do {
-            let all = try await budgetService.fetchBudgets(userId: userId)
-            let cal = Calendar.current
-            budgetHistory = all
-                .sorted { $0.createdAt > $1.createdAt }
-                .map { b in
-                    let daysInMonth = cal.range(of: .day, in: .month,
-                        for: cal.date(from: DateComponents(year: b.year, month: b.month)) ?? Date()
-                    )?.count ?? 30
-                    return BudgetHistoryItem(
-                        period:        b.period,
-                        daysCompleted: daysInMonth,
-                        totalBudget:   b.monthlyLimit,
-                        actualSpend:   b.currentSpending
-                    )
-                }
-        } catch {
-            budgetHistory = BudgetHistoryItem.mockHistory()
-        }
+        await loadBudgetHistory(userId: userId)
         weeklyTrend = DailySpending.mockWeek()
     }
 
@@ -185,7 +160,41 @@ final class BudgetViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Pure helpers (unit-testable)
+    func loadBudgetHistory(userId: String) async {
+        guard !userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            budgets = []
+            budgetHistory = []
+            return
+        }
+        do {
+            let fetched = try await budgetService.fetchBudgets(userId: userId)
+            budgets = try await withBudgetSpendingApplied(fetched, userId: userId)
+            budgetHistory = budgets.map(historyItem(from:))
+            errorMessage = nil
+        } catch {
+            budgets = []
+            budgetHistory = []
+            if errorMessage == nil {
+                errorMessage = "Could not load budget activity."
+            }
+        }
+    }
+
+    func budget(for id: UUID) -> Budget? {
+        budgets.first { $0.id == id }
+    }
+
+    func isEditable(_ budget: Budget) -> Bool {
+        periodRelation(for: budget) != .past
+    }
+
+    func isUpcoming(_ budget: Budget) -> Bool {
+        periodRelation(for: budget) == .future
+    }
+
+    func availableBudgetYears() -> [Int] {
+        Array(Set(budgets.map(\.year))).sorted(by: >)
+    }
 
     func parsedAmount() -> Double? {
         let cleaned = targetAmount
@@ -196,19 +205,75 @@ final class BudgetViewModel: ObservableObject {
     }
 
     var availableMonths: [String] {
-        ["January","February","March","April","May","June",
-         "July","August","September","October","November","December"]
+        let allMonths = ["January","February","March","April","May","June",
+                         "July","August","September","October","November","December"]
+        let currentMonthIndex = max(Calendar.current.component(.month, from: Date()) - 1, 0)
+        return Array(allMonths.dropFirst(currentMonthIndex))
     }
 
     func periodString(for month: String) -> String {
         "\(month) \(Calendar.current.component(.year, from: Date()))"
     }
 
-    // MARK: - CoreData
+    private enum BudgetPeriodRelation {
+        case past, current, future
+    }
+
+    private func periodRelation(for budget: Budget) -> BudgetPeriodRelation {
+        let cal = Calendar.current
+        let now = Date()
+        let currentYear = cal.component(.year, from: now)
+        let currentMonth = cal.component(.month, from: now)
+
+        if budget.year < currentYear { return .past }
+        if budget.year > currentYear { return .future }
+        if budget.month < currentMonth { return .past }
+        if budget.month > currentMonth { return .future }
+        return .current
+    }
+
+    private func withBudgetSpendingApplied(_ items: [Budget], userId: String) async throws -> [Budget] {
+        let allReceipts = (try? await receiptService.fetchReceipts(userId: userId)) ?? []
+        var updated: [Budget] = []
+        for budget in items.sorted(by: { lhs, rhs in
+            if lhs.year == rhs.year { return lhs.month > rhs.month }
+            return lhs.year > rhs.year
+        }) {
+            if isUpcoming(budget) {
+                var futureBudget = budget
+                futureBudget.currentSpending = 0
+                updated.append(futureBudget)
+                continue
+            }
+
+            var hydrated = budget
+            hydrated.currentSpending = budgetService.totalSpending(
+                userId: userId,
+                month: budget.month,
+                year: budget.year,
+                receipts: allReceipts
+            )
+            updated.append(hydrated)
+        }
+        return updated
+    }
+
+    private func historyItem(from budget: Budget) -> BudgetHistoryItem {
+        let cal = Calendar.current
+        let monthDate = cal.date(from: DateComponents(year: budget.year, month: budget.month, day: 1)) ?? Date()
+        let daysInMonth = cal.range(of: .day, in: .month, for: monthDate)?.count ?? 30
+        return BudgetHistoryItem(
+            id: budget.id,
+            period: budget.period,
+            daysCompleted: daysInMonth,
+            totalBudget: budget.monthlyLimit,
+            actualSpend: budget.currentSpending
+        )
+    }
+
 
     private func saveToCoreData(_ budget: Budget) {
         persistence.performBackgroundTask { ctx in
-            // Upsert
             let req = CDBudget.fetchRequest(userId: budget.userId ?? "",
                                              month: budget.month, year: budget.year)
             let entity = (try? ctx.fetch(req).first) ?? CDBudget(context: ctx)

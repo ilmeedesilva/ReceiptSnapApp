@@ -1,4 +1,3 @@
-
 import Foundation
 import UIKit
 import FirebaseFirestore
@@ -9,10 +8,8 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
     private let db      = Firestore.firestore()
     private let storage = Storage.storage()
 
-    // Firestore collection name
     private let collection = "receipts"
 
-    // MARK: - Fetch
 
     func fetchReceipts(userId: String) async throws -> [Receipt] {
         do {
@@ -63,12 +60,15 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         }
     }
 
-    // MARK: - Mutations
 
     func addReceipt(_ receipt: Receipt, image: UIImage?) async throws -> Receipt {
+        guard let userId = validatedUserId(from: receipt) else {
+            throw ServiceError.invalidInput("Missing user ID for receipt upload.")
+        }
+
         var saved = receipt
         if let img = image {
-            let url = try await uploadImage(img, receiptId: receipt.id)
+            let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
             saved = withImageURL(saved, url: url.absoluteString)
         }
         try await write(saved)
@@ -76,14 +76,17 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
     }
 
     func updateReceipt(_ receipt: Receipt, image: UIImage?) async throws -> Receipt {
+        guard let userId = validatedUserId(from: receipt) else {
+            throw ServiceError.invalidInput("Missing user ID for receipt upload.")
+        }
+
         var updated = receipt
         updated = withUpdatedAt(updated)
         if let img = image {
-            // Delete old image if present
             if let old = receipt.imageURL, let ref = try? storageRef(from: old) {
                 try? await ref.delete()
             }
-            let url = try await uploadImage(img, receiptId: receipt.id)
+            let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
             updated = withImageURL(updated, url: url.absoluteString)
         }
         try await write(updated)
@@ -91,7 +94,6 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
     }
 
     func deleteReceipt(id: UUID, userId: String) async throws {
-        // Delete image from Storage if it exists
         if let receipt = try? await fetchOne(id: id, userId: userId),
            let imageURL = receipt.imageURL,
            let ref = try? storageRef(from: imageURL) {
@@ -104,7 +106,6 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         }
     }
 
-    // MARK: - Private helpers
 
     private func write(_ receipt: Receipt) async throws {
         let data = encode(receipt)
@@ -122,11 +123,11 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         return doc.flatMap { decode($0) }
     }
 
-    private func uploadImage(_ image: UIImage, receiptId: UUID) async throws -> URL {
+    private func uploadImage(_ image: UIImage, userId: String, receiptId: UUID) async throws -> URL {
         guard let data = image.jpegData(compressionQuality: 0.8) else {
             throw ServiceError.invalidInput("Cannot convert image to JPEG.")
         }
-        let ref = storage.reference().child("receipts/\(receiptId.uuidString).jpg")
+        let ref = storage.reference().child("receipts/\(userId)/\(receiptId.uuidString).jpg")
         let meta = StorageMetadata()
         meta.contentType = "image/jpeg"
         _ = try await ref.putDataAsync(data, metadata: meta)
@@ -134,11 +135,18 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         return url
     }
 
+    private func validatedUserId(from receipt: Receipt) -> String? {
+        guard let raw = receipt.userId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+        return raw
+    }
+
     private func storageRef(from urlString: String) throws -> StorageReference {
         storage.reference(forURL: urlString)
     }
 
-    // MARK: - Encoding / decoding
 
     private func encode(_ r: Receipt) -> [String: Any] {
         var data: [String: Any] = [
@@ -217,7 +225,6 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         )
     }
 
-    // MARK: - Value-type helpers (Receipt is a struct, so we need copies)
 
     private func withImageURL(_ r: Receipt, url: String) -> Receipt {
         Receipt(id: r.id, userId: r.userId, title: r.title, category: r.category,

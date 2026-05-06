@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct DashboardView: View {
@@ -25,7 +24,6 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Dashboard scroll content
 
     private var dashboardContent: some View {
         ScrollView(showsIndicators: false) {
@@ -39,6 +37,7 @@ struct DashboardView: View {
                 BudgetSectionView(
                     budget:          viewModel.budget,
                     onSetBudget:     { budgetPath.append(BudgetRoute.setBudget) },
+                    onBudgetHistoryTap: { budgetPath.append(BudgetRoute.budgetHistory) },
                     onBudgetCardTap: {
                         guard viewModel.budget != nil else { return }
                         budgetPath.append(BudgetRoute.budgetOverview)
@@ -98,7 +97,6 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Budget navigation destinations
 
     @ViewBuilder
     private func budgetDestination(for route: BudgetRoute) -> some View {
@@ -115,7 +113,7 @@ struct DashboardView: View {
             if let budget = viewModel.budget {
                 BudgetOverviewView(
                     budget:         budget,
-                    onEditBudget:   { budgetPath.append(BudgetRoute.editBudget) },
+                    onEditBudget:   { budgetPath.append(BudgetRoute.editBudget(id: budget.id)) },
                     onViewHistory:  { budgetPath.append(BudgetRoute.budgetHistory) },
                     onBudgetCardTap: {
                         let dest: BudgetRoute = budget.isOverBudget
@@ -127,12 +125,12 @@ struct DashboardView: View {
                 .environmentObject(budgetViewModel)
             }
 
-        case .editBudget:
-            if let budget = viewModel.budget {
+        case .editBudget(let id):
+            if let budget = budgetViewModel.budget(for: id) ?? (viewModel.budget?.id == id ? viewModel.budget : nil) {
                 EditBudgetView(
                     budget:    budget,
                     onSaved:   {
-                        // Dismiss back to overview (pop one level)
+                    
                         budgetPath.removeLast()
                     },
                     onDeleted: { budgetPath.append(BudgetRoute.budgetDeleteSuccess) }
@@ -141,9 +139,22 @@ struct DashboardView: View {
             }
 
         case .budgetHistory:
-            BudgetHistoryView()
+            BudgetHistoryView { budget in
+                budgetPath.append(BudgetRoute.budgetDetail(id: budget.id))
+            }
                 .environmentObject(budgetViewModel)
                 .environmentObject(appState)
+
+        case .budgetDetail(let id):
+            if let budget = budgetViewModel.budget(for: id) {
+                BudgetDetailView(
+                    budget: budget,
+                    onEditBudget: budgetViewModel.isEditable(budget)
+                        ? { budgetPath.append(BudgetRoute.editBudget(id: budget.id)) }
+                        : nil
+                )
+                .environmentObject(budgetViewModel)
+            }
 
         case .budgetFeedback:
             if let budget = viewModel.budget {
@@ -156,7 +167,11 @@ struct DashboardView: View {
 
         case .budgetExceeded:
             BudgetExceededView(
-                onEditBudget:      { budgetPath.append(BudgetRoute.editBudget) },
+                onEditBudget:      {
+                    if let budget = viewModel.budget {
+                        budgetPath.append(BudgetRoute.editBudget(id: budget.id))
+                    }
+                },
                 onBackToDashboard: { budgetPath = NavigationPath() }
             )
 
@@ -194,13 +209,10 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Callback wiring
-
-    /// Connects BudgetViewModel operations back to DashboardViewModel state.
     private func wireBudgetCallbacks() {
         budgetViewModel.onBudgetSaved = { budget in
             viewModel.budget = budget
-            // Reload so totalSpending + categories reflect current receipts
+
             Task { await viewModel.loadDashboard(userId: appState.userId) }
         }
         budgetViewModel.onBudgetDeleted = {
@@ -227,7 +239,7 @@ private struct DashboardHeaderView: View {
                     .foregroundColor(.rsDeepGreen)
             }
             Spacer()
-            // Tappable profile avatar
+
             Button(action: onProfileTap) {
                 ZStack {
                     Circle()

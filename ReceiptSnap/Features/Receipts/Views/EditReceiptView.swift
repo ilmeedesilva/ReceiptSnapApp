@@ -9,6 +9,7 @@ struct EditReceiptView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+
     @State private var merchantName:  String
     @State private var amountText:    String
     @State private var selectedDate:  Date
@@ -16,14 +17,12 @@ struct EditReceiptView: View {
     @State private var notes:         String
     @State private var isFavorite:    Bool
 
-
     @State private var splitEnabled:      Bool
     @State private var splitWithName:     String
     @State private var splitContact:      String
     @State private var splitType:         SplitType
     @State private var customAmountYou:   String
     @State private var customAmountOther: String
-
 
     @State private var selectedImage:  UIImage?       = nil
     @State private var photosItem:     PhotosPickerItem? = nil
@@ -182,6 +181,7 @@ struct EditReceiptView: View {
             .frame(height: 180)
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.card))
 
+
             PhotosPicker(selection: $photosItem, matching: .images) {
                 HStack(spacing: 4) {
                     Image(systemName: "camera")
@@ -293,6 +293,7 @@ struct EditReceiptView: View {
     }
 
 
+
     private var favoriteSplitSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
             HStack {
@@ -399,10 +400,19 @@ struct EditReceiptView: View {
                 ) : nil
 
                 let updated = Receipt(
-                    id: receipt.id, title: merchantName, category: category,
-                    date: selectedDate, amount: -parsedAmount,
-                    notes: notes, isFavorite: isFavorite,
-                    imageURL: receipt.imageURL, splitDetail: split
+                    id: receipt.id,
+                    userId: receipt.userId,
+                    title: merchantName,
+                    category: category,
+                    date: selectedDate,
+                    amount: -parsedAmount,
+                    notes: notes,
+                    isFavorite: isFavorite,
+                    tags: receipt.tags,
+                    imageURL: receipt.imageURL,
+                    splitDetail: split,
+                    createdAt: receipt.createdAt,
+                    updatedAt: Date()
                 )
 
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { showSavedToast = true }
@@ -439,7 +449,6 @@ struct EditReceiptView: View {
         }
     }
 }
-
 
 
 private extension View {

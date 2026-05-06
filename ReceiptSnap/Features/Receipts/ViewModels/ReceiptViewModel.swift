@@ -4,7 +4,7 @@ import UIKit
 import Combine
 
 extension Notification.Name {
-   
+
     static let receiptsChanged    = Notification.Name("rs.receiptsChanged")
     static let receiptAdded       = Notification.Name("rs.receiptAdded")
     static let switchToReceipts   = Notification.Name("rs.switchToReceipts")
@@ -16,6 +16,7 @@ extension Notification.Name {
 
 @MainActor
 final class ReceiptViewModel: ObservableObject {
+
 
     @Published var receipts:     [Receipt]     = []
     @Published var filter:       ReceiptFilter  = ReceiptFilter()
@@ -42,7 +43,6 @@ final class ReceiptViewModel: ObservableObject {
         self.persistence    = persistence
     }
 
-
     var filteredReceipts: [Receipt] {
         searchService.filter(receipts, by: filter)
     }
@@ -64,12 +64,16 @@ final class ReceiptViewModel: ObservableObject {
     }
 
 
+
     func loadReceipts(userId: String? = nil) async {
         if receipts.isEmpty {
             loadFromCoreData(userId: userId)
         }
 
         guard let uid = userId, !uid.isEmpty else { return }
+        if receipts.contains(where: { $0.userId == nil || $0.userId?.isEmpty == true }) {
+            receipts = receipts.map { hydratedReceipt($0, userId: uid) }
+        }
         isSyncing = true
         defer { isSyncing = false }
         do {
@@ -117,18 +121,19 @@ final class ReceiptViewModel: ObservableObject {
 
     func addReceipt(_ receipt: Receipt, image: UIImage? = nil) async {
         errorMessage = nil
-        do { try validate(receipt) } catch {
+        let prepared = hydratedReceipt(receipt, userId: receipt.userId)
+        do { try validate(prepared) } catch {
             errorMessage = error.localizedDescription; return
         }
 
         isLoading = true
         defer { isLoading = false }
 
-        receipts.insert(receipt, at: 0)
-        saveOneToCoreData(receipt)
+        receipts.insert(prepared, at: 0)
+        saveOneToCoreData(prepared)
 
         do {
-            let saved = try await receiptService.addReceipt(receipt, image: image)
+            let saved = try await receiptService.addReceipt(prepared, image: image)
             if let i = receipts.firstIndex(where: { $0.id == saved.id }) {
                 receipts[i] = saved
                 saveOneToCoreData(saved)
@@ -136,34 +141,35 @@ final class ReceiptViewModel: ObservableObject {
             NotificationCenter.default.post(name: .receiptAdded,    object: nil)
             NotificationCenter.default.post(name: .receiptsChanged, object: nil)
         } catch {
-            receipts.removeAll { $0.id == receipt.id }
-            deleteFromCoreData(id: receipt.id)
+            receipts.removeAll { $0.id == prepared.id }
+            deleteFromCoreData(id: prepared.id)
             errorMessage = "Could not save receipt. Please try again."
         }
     }
 
     func updateReceipt(_ updated: Receipt, image: UIImage? = nil) async {
         errorMessage = nil
-        do { try validate(updated) } catch {
+        let prepared = hydratedReceipt(updated, userId: updated.userId)
+        do { try validate(prepared) } catch {
             errorMessage = error.localizedDescription; return
         }
 
         isLoading = true
         defer { isLoading = false }
 
-        if let i = receipts.firstIndex(where: { $0.id == updated.id }) {
-            receipts[i] = updated
-            saveOneToCoreData(updated)
+        if let i = receipts.firstIndex(where: { $0.id == prepared.id }) {
+            receipts[i] = prepared
+            saveOneToCoreData(prepared)
         }
 
         do {
-            let saved = try await receiptService.updateReceipt(updated, image: image)
+            let saved = try await receiptService.updateReceipt(prepared, image: image)
             if let i = receipts.firstIndex(where: { $0.id == saved.id }) {
                 receipts[i] = saved
                 saveOneToCoreData(saved)
             }
         } catch {
-            loadFromCoreData(userId: updated.userId)
+            loadFromCoreData(userId: prepared.userId)
             errorMessage = "Could not update receipt. Please try again."
         }
         NotificationCenter.default.post(name: .receiptsChanged, object: nil)
@@ -210,6 +216,16 @@ final class ReceiptViewModel: ObservableObject {
             .reduce(0) { $0 + abs($1.amount) }
     }
 
+
+    private func hydratedReceipt(_ receipt: Receipt, userId: String?) -> Receipt {
+        guard let rawUserId = userId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawUserId.isEmpty else {
+            return receipt
+        }
+        var hydrated = receipt
+        hydrated.userId = rawUserId
+        return hydrated
+    }
 
     private func loadFromCoreData(userId: String?) {
         let ctx = persistence.viewContext

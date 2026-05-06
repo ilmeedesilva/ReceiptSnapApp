@@ -26,7 +26,6 @@ final class AppState: ObservableObject {
         currentUser                = nil
         pendingUser                = nil
 
-
         restoreSessionIfNeeded()
     }
 
@@ -68,5 +67,9 @@ final class AppState: ObservableObject {
     }
 
     private func restoreSessionIfNeeded() {
+        if let existingUser = ServiceLocator.shared.authService.getCurrentUser() {
+            currentUser = existingUser
+            isAuthenticated = true
+        }
     }
 }
