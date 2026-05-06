@@ -7,6 +7,7 @@ struct AddReceiptView: View {
     @EnvironmentObject private var appState:  AppState
     @Environment(\.dismiss) private var dismiss
 
+
     @State private var merchantName:   String           = ""
     @State private var amountText:     String           = ""
     @State private var selectedDate:   Date             = Date()
@@ -32,6 +33,7 @@ struct AddReceiptView: View {
 
     private enum PostSaveDestination { case dashboard, receipts }
 
+
     var parsedAmount: Double { Double(amountText) ?? 0 }
 
     var splitAmountYou: Double {
@@ -46,6 +48,14 @@ struct AddReceiptView: View {
     var isCustomSplitValid: Bool { abs(customSplitDifference) < 0.01 }
 
     var canSave: Bool { !merchantName.isEmpty && parsedAmount > 0 }
+
+    private var currentUserId: String? {
+        guard let raw = appState.userId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+        return raw
+    }
 
 
     var body: some View {
@@ -78,6 +88,7 @@ struct AddReceiptView: View {
                 .dismissKeyboardOnTap()
             }
 
+         
             if showScanning {
                 ScanningOverlayView {
                     showScanning = false
@@ -90,7 +101,7 @@ struct AddReceiptView: View {
         .animation(.easeInOut(duration: 0.25), value: showScanning)
         .sheet(isPresented: $showSavedSheet, onDismiss: {
             dismiss()
-        
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 switch postSaveDest {
                 case .receipts:  NotificationCenter.default.post(name: .switchToReceipts,  object: nil)
@@ -241,6 +252,7 @@ struct AddReceiptView: View {
                     .rsInputStyle()
             }
 
+
             HStack(spacing: AppTheme.Spacing.md) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Amount")
@@ -273,6 +285,7 @@ struct AddReceiptView: View {
                         )
                 }
             }
+
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Category")
@@ -371,7 +384,6 @@ struct AddReceiptView: View {
     }
 
 
-
     private var splitDetailsSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
 
@@ -434,6 +446,8 @@ struct AddReceiptView: View {
             if splitType == .custom {
                 customSplitSection
             }
+
+
             splitPreviewCard
         }
         .rsCardStyle()
@@ -552,7 +566,13 @@ struct AddReceiptView: View {
     }
 
 
+
     private func handleSave() {
+        guard let userId = currentUserId else {
+            receiptVM.errorMessage = "Please sign in before saving a receipt."
+            return
+        }
+
         let name = splitContact.isEmpty ? splitWithName : splitContact
         let split: SplitDetail? = splitEnabled ? SplitDetail(
             isEnabled:     true,
@@ -563,7 +583,7 @@ struct AddReceiptView: View {
         ) : nil
 
         let receipt = Receipt(
-            userId:      appState.userId,
+            userId:      userId,
             title:       merchantName,
             category:    category,
             date:        selectedDate,
@@ -575,7 +595,9 @@ struct AddReceiptView: View {
 
         Task {
             await receiptVM.addReceipt(receipt, image: selectedImage)
-            showSavedSheet = true
+            if receiptVM.errorMessage == nil {
+                showSavedSheet = true
+            }
         }
     }
 
@@ -586,7 +608,7 @@ struct AddReceiptView: View {
         let ocrService = ServiceLocator.shared.ocrService
         do {
             let result = try await ocrService.recognise(image: image)
-           
+
             let elapsed = Date().timeIntervalSince(startTime)
             if elapsed < 3.0 {
                 try? await Task.sleep(nanoseconds: UInt64((3.0 - elapsed) * 1_000_000_000))
@@ -604,6 +626,7 @@ struct AddReceiptView: View {
 }
 
 
+
 private extension View {
     func rsInputStyle() -> some View {
         self
@@ -617,6 +640,7 @@ private extension View {
             )
     }
 }
+
 
 
 private struct ScanningOverlayView: View {
@@ -638,6 +662,7 @@ private struct ScanningOverlayView: View {
 
             VStack(spacing: AppTheme.Spacing.lg) {
                 Spacer()
+
 
                 Circle()
                     .trim(from: 0, to: 0.7)
@@ -697,7 +722,6 @@ private struct ScanningOverlayView: View {
 }
 
 
-
 private struct ReceiptSavedSheet: View {
 
     let merchantName: String
@@ -727,7 +751,7 @@ private struct ReceiptSavedSheet: View {
                     .foregroundColor(.rsTextPrimary)
                     .multilineTextAlignment(.center)
 
-                Text("Your expense from *\(merchantName)* for $\(String(format: "%.2f", amount)) has been added to your records.")
+                Text("Your expense from **\(merchantName)** for $\(String(format: "%.2f", amount)) has been added to your records.")
                     .font(.system(size: AppTheme.Font.body))
                     .foregroundColor(.rsTextSecondary)
                     .multilineTextAlignment(.center)

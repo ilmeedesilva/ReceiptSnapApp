@@ -26,8 +26,8 @@ struct ReceiptsListView: View {
             .navigationDestination(for: ReceiptRoute.self) { route in
                 receiptDestination(for: route)
             }
-            .task(id: appState.userId) { await receiptVM.loadReceipts(userId: appState.userId) }
 
+            .task(id: appState.userId) { await receiptVM.loadReceipts(userId: appState.userId) }
             .onReceive(NotificationCenter.default.publisher(for: .receiptsChanged)) { _ in
                 Task { await receiptVM.loadReceipts(userId: appState.userId) }
             }
@@ -40,7 +40,6 @@ struct ReceiptsListView: View {
             }
         }
     }
-
 
     private var searchAndFilterBar: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
@@ -75,7 +74,6 @@ struct ReceiptsListView: View {
         .padding(.top, AppTheme.Spacing.sm)
         .padding(.bottom, AppTheme.Spacing.xs)
     }
-
 
 
     private var categoryChips: some View {
@@ -139,6 +137,7 @@ struct ReceiptsListView: View {
         .scrollContentBackground(.hidden)
     }
 
+
     private var emptyState: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             Image(systemName: "doc.text.magnifyingglass")
@@ -190,7 +189,6 @@ struct ReceiptsListView: View {
 }
 
 
-
 struct ReceiptListRow: View {
 
     let receipt:       Receipt
@@ -198,7 +196,6 @@ struct ReceiptListRow: View {
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
-
             ZStack {
                 Circle()
                     .fill(Color(hex: receipt.category.colorHex).opacity(0.15))
@@ -264,7 +261,6 @@ private struct ReceiptFilterSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-
 
                     filterSection("CATEGORY") {
                         FlowRow(spacing: AppTheme.Spacing.sm) {
@@ -434,6 +430,7 @@ private struct ReceiptFilterSheet: View {
         }
     }
 }
+
 
 
 private struct FlowRow<Content: View>: View {

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SignUpView: View {
 
-    // MARK: - Dependencies
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: SignUpViewModel
     let onBack:        () -> Void
@@ -10,6 +9,7 @@ struct SignUpView: View {
 
     @State private var showGenderPicker = false
     @State private var shakeError = false
+    @State private var showAppleSignInInfo = false
 
     var body: some View {
         ScrollView {
@@ -132,6 +132,7 @@ struct SignUpView: View {
                             handleGoogleSignUp()
                         }
                         SocialLoginButton(title: "Apple", icon: "apple.logo") {
+                            showAppleSignInInfo = true
                         }
                     }
 
@@ -155,9 +156,13 @@ struct SignUpView: View {
         .navigationBarHidden(true)
         .dismissKeyboardOnTap()
         .loadingOverlay(isLoading: viewModel.isLoading, message: "Creating account…")
+        .alert("Apple Sign-In Not Included", isPresented: $showAppleSignInInfo) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This build includes Google sign-in and biometric login. Apple Sign-In capability is added, but the full authorization flow is not implemented in this build.")
+        }
     }
 
-    // MARK: - Actions
     private func handleSignUp() {
         Task {
             if let user = await viewModel.signUp() {
@@ -176,7 +181,6 @@ struct SignUpView: View {
         }
     }
 
-    // MARK: - Password strength
     private var passwordStrengthRow: some View {
         VStack(spacing: 6) {
             strengthRule(met: viewModel.hasMinLength,      label: "At least 8 characters")
@@ -200,7 +204,6 @@ struct SignUpView: View {
         }
     }
 
-    // MARK: - Terms row
     private var termsRow: some View {
         HStack(alignment: .top, spacing: 10) {
             Button {

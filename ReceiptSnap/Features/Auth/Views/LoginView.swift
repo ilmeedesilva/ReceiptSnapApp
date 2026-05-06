@@ -2,14 +2,13 @@ import SwiftUI
 
 struct LoginView: View {
 
-    // MARK: - Dependencies
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: LoginViewModel
     let onNavigate: (AuthRoute) -> Void
 
-    // MARK: - Local state
     @State private var shakeError = false
     @State private var shakeBiometricError = false
+    @State private var showAppleSignInInfo = false
 
     var body: some View {
         ScrollView {
@@ -120,6 +119,7 @@ struct LoginView: View {
                         handleGoogleSignIn()
                     }
                     SocialLoginButton(title: "Apple", icon: "apple.logo") {
+                        showAppleSignInInfo = true
                     }
                 }
                 .padding(.horizontal, AppTheme.Spacing.xl)
@@ -129,11 +129,15 @@ struct LoginView: View {
 
                 #if DEBUG
                 Button {
-                    appState.signIn(user: AppUser(
-                        uid:         "dev-preview",
-                        email:       "dev@receiptsnap.com",
-                        displayName: "Dev User"
-                    ))
+                    if let existingUser = ServiceLocator.shared.authService.getCurrentUser() {
+                        appState.signIn(user: existingUser)
+                    } else {
+                        appState.signIn(user: AppUser(
+                            uid:         "dev-preview",
+                            email:       "dev@receiptsnap.com",
+                            displayName: "Dev User"
+                        ))
+                    }
                 } label: {
                     Text("Skip to Dashboard (Dev)")
                         .font(.system(size: AppTheme.Font.caption, weight: .medium))
@@ -150,9 +154,13 @@ struct LoginView: View {
         .navigationBarHidden(true)
         .dismissKeyboardOnTap()
         .loadingOverlay(isLoading: viewModel.isLoading, message: "Signing in…")
+        .alert("Apple Sign-In Not Included", isPresented: $showAppleSignInInfo) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This assessment build includes Google sign-in and biometric login. Apple Sign-In capability is added, but the full authorization flow is not implemented in this build.")
+        }
     }
 
-    // MARK: - Actions
     private func handleSignIn() {
         Task {
             if let user = await viewModel.signIn() {
@@ -181,7 +189,6 @@ struct LoginView: View {
         }
     }
 
-    // MARK: - Sub-views
     private func divider(_ label: String) -> some View {
         HStack(spacing: 12) {
             Rectangle().fill(Color.rsBorder).frame(height: 1)

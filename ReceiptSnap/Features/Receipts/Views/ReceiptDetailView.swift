@@ -126,6 +126,7 @@ struct ReceiptDetailView: View {
             .frame(height: 200)
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.card))
 
+
             if receiptImageURL != nil {
                 ZStack {
                     Circle()
@@ -153,6 +154,7 @@ struct ReceiptDetailView: View {
             .resizable()
             .scaledToFill()
     }
+
 
 
     private var formSection: some View {
@@ -204,6 +206,7 @@ struct ReceiptDetailView: View {
                 )
         }
     }
+
 
 
     private var favoriteRow: some View {
