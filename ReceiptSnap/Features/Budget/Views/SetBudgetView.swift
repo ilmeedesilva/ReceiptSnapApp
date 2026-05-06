@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct SetBudgetView: View {
@@ -7,9 +6,7 @@ struct SetBudgetView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
 
-    /// Called after a successful save — parent pushes to BudgetSetSuccessView.
     let onSaved: () -> Void
-    /// Called when "View Budget history" link is tapped.
     let onViewHistory: () -> Void
 
     var body: some View {
@@ -17,7 +14,7 @@ struct SetBudgetView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.lg) {
 
-                    Spacer().frame(height: 48) // space for custom nav bar
+                    Spacer().frame(height: 48)
 
                     headerSection
 
@@ -29,7 +26,7 @@ struct SetBudgetView: View {
                     buttonsSection
 
                     Button { onViewHistory() } label: {
-                        Text("View Budget history")
+                        Text("View Budget Activity")
                             .font(.system(size: AppTheme.Font.body, weight: .medium))
                             .foregroundColor(.rsForestGreen)
                     }
@@ -39,7 +36,6 @@ struct SetBudgetView: View {
                 .padding(.horizontal, AppTheme.Spacing.md)
             }
 
-            // Custom navigation bar
             navBar
         }
         .rsScreenBackground()
@@ -53,7 +49,6 @@ struct SetBudgetView: View {
         }
     }
 
-    // MARK: - Nav bar
 
     private var navBar: some View {
         HStack {
@@ -68,14 +63,13 @@ struct SetBudgetView: View {
                 .font(.system(size: AppTheme.Font.headline, weight: .bold))
                 .foregroundColor(.rsTextPrimary)
             Spacer()
-            Color.clear.frame(width: 44, height: 44) // balance spacer
+            Color.clear.frame(width: 44, height: 44) 
         }
         .padding(.horizontal, AppTheme.Spacing.sm)
         .frame(height: 56)
         .background(Color.rsBackgroundGreen)
     }
 
-    // MARK: - Header
 
     private var headerSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
@@ -98,7 +92,6 @@ struct SetBudgetView: View {
         .padding(.top, AppTheme.Spacing.sm)
     }
 
-    // MARK: - Month picker
 
     private var monthPickerCard: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
@@ -133,11 +126,9 @@ struct SetBudgetView: View {
         }
     }
 
-    // MARK: - Amount input
 
     private var amountCard: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            // Amount input card
             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
                 Text("TARGET AMOUNT")
                     .font(.system(size: AppTheme.Font.caption, weight: .semibold))
@@ -167,7 +158,6 @@ struct SetBudgetView: View {
                     .stroke(Color.rsBorder, lineWidth: 1)
             )
 
-            // Quick-amount chips
             HStack(spacing: AppTheme.Spacing.sm) {
                 ForEach([500, 1000, 2500, 5000], id: \.self) { preset in
                     let isSelected = budgetVM.targetAmount == "\(preset)"
@@ -189,7 +179,6 @@ struct SetBudgetView: View {
         }
     }
 
-    // MARK: - Buttons
 
     private var buttonsSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {

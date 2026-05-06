@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 
@@ -6,17 +5,18 @@ struct BudgetSectionView: View {
 
     let budget:          Budget?
     let onSetBudget:     () -> Void
-    /// Tapping the active budget card navigates to Budget Overview.
+    let onBudgetHistoryTap: () -> Void
+   
     var onBudgetCardTap: () -> Void = {}
 
     var body: some View {
         if let budget {
             Button(action: onBudgetCardTap) {
-                BudgetProgressCard(budget: budget)
+                BudgetProgressCard(budget: budget, onBudgetHistoryTap: onBudgetHistoryTap)
             }
             .buttonStyle(.plain)
         } else {
-            BudgetEmptyCard(onSetBudget: onSetBudget)
+            BudgetEmptyCard(onSetBudget: onSetBudget, onBudgetHistoryTap: onBudgetHistoryTap)
         }
     }
 }
@@ -25,11 +25,11 @@ struct BudgetSectionView: View {
 private struct BudgetEmptyCard: View {
 
     let onSetBudget: () -> Void
+    let onBudgetHistoryTap: () -> Void
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.md) {
 
-            // Icon + titles row
             HStack(spacing: AppTheme.Spacing.md) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppTheme.Radius.sm)
@@ -51,7 +51,6 @@ private struct BudgetEmptyCard: View {
                 Spacer()
             }
 
-            // CTA button
             Button(action: onSetBudget) {
                 Text("Set Budget")
                     .font(.system(size: AppTheme.Font.bodyLg, weight: .semibold))
@@ -60,6 +59,12 @@ private struct BudgetEmptyCard: View {
                     .frame(height: AppTheme.Height.button)
                     .background(Color.rsDeepGreen)
                     .cornerRadius(AppTheme.Radius.button)
+            }
+
+            Button(action: onBudgetHistoryTap) {
+                Text("Budget Activity")
+                    .font(.system(size: AppTheme.Font.body, weight: .medium))
+                    .foregroundColor(.rsForestGreen)
             }
         }
         .rsCardStyle()
@@ -70,11 +75,11 @@ private struct BudgetEmptyCard: View {
 private struct BudgetProgressCard: View {
 
     let budget: Budget
+    let onBudgetHistoryTap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
 
-            // Header: title + ACTIVE badge
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Monthly Budget")
@@ -94,9 +99,9 @@ private struct BudgetProgressCard: View {
                     .cornerRadius(AppTheme.Radius.pill)
             }
 
-            // Spending vs limit + status
+
             HStack(alignment: .firstTextBaseline) {
-                // "$320 / $500"
+
                 (
                     Text("$\(Int(budget.currentSpending))")
                         .font(.system(size: 36, weight: .bold))
@@ -107,7 +112,7 @@ private struct BudgetProgressCard: View {
                         .foregroundColor(.rsTextSecondary)
                 )
                 Spacer()
-                // Status indicator
+
                 HStack(spacing: 4) {
                     if !budget.isOverBudget {
                         Image(systemName: "checkmark.circle.fill")
@@ -121,7 +126,6 @@ private struct BudgetProgressCard: View {
                 }
             }
 
-            // Progress bar + labels
             VStack(spacing: 6) {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
@@ -149,6 +153,16 @@ private struct BudgetProgressCard: View {
                         .foregroundColor(.rsTextSecondary)
                 }
             }
+
+            HStack {
+                Spacer()
+                Button(action: onBudgetHistoryTap) {
+                    Text("Budget Activity")
+                        .font(.system(size: AppTheme.Font.body, weight: .medium))
+                        .foregroundColor(.rsForestGreen)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .rsCardStyle()
     }
@@ -156,13 +170,13 @@ private struct BudgetProgressCard: View {
 
 
 #Preview("No budget") {
-    BudgetSectionView(budget: nil, onSetBudget: {}, onBudgetCardTap: {})
+    BudgetSectionView(budget: nil, onSetBudget: {}, onBudgetHistoryTap: {}, onBudgetCardTap: {})
         .padding()
         .background(Color.rsBackgroundGreen)
 }
 
 #Preview("Budget active") {
-    BudgetSectionView(budget: Budget.mock(), onSetBudget: {}, onBudgetCardTap: {})
+    BudgetSectionView(budget: Budget.mock(), onSetBudget: {}, onBudgetHistoryTap: {}, onBudgetCardTap: {})
         .padding()
         .background(Color.rsBackgroundGreen)
 }
@@ -171,6 +185,7 @@ private struct BudgetProgressCard: View {
     BudgetSectionView(
         budget: Budget(monthlyLimit: 500, currentSpending: 560, period: "April 2026"),
         onSetBudget: {},
+        onBudgetHistoryTap: {},
         onBudgetCardTap: {}
     )
     .padding()

@@ -1,11 +1,11 @@
-
 import Foundation
 
 enum BudgetRoute: Hashable {
     case setBudget
     case budgetOverview
-    case editBudget
+    case editBudget(id: UUID)
     case budgetHistory
+    case budgetDetail(id: UUID)
     case budgetFeedback
     case budgetExceeded
     case budgetSetSuccess
