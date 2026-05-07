@@ -25,6 +25,7 @@ enum BiometricType {
 protocol BiometricServiceProtocol {
     var biometricType: BiometricType { get }
     var isBiometricAvailable: Bool   { get }
+    var isSimulationEnabled: Bool    { get }
     func authenticate(reason: String) async throws -> Bool
 }
 
@@ -50,7 +51,14 @@ enum BiometricError: LocalizedError {
 
 final class BiometricService: BiometricServiceProtocol {
 
+    private let simulationDefaultsKey = "rs_face_id_simulation_enabled"
+
+    var isSimulationEnabled: Bool {
+        UserDefaults.standard.object(forKey: simulationDefaultsKey) as? Bool ?? true
+    }
+
     var biometricType: BiometricType {
+        if isSimulationEnabled { return .faceID }
         let ctx = LAContext()
         var err: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err) else {
@@ -64,11 +72,16 @@ final class BiometricService: BiometricServiceProtocol {
     }
 
     var isBiometricAvailable: Bool {
+        if isSimulationEnabled { return true }
         var err: NSError?
         return LAContext().canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err)
     }
 
     func authenticate(reason: String) async throws -> Bool {
+        if isSimulationEnabled {
+            try await Task.sleep(nanoseconds: 1_400_000_000)
+            return true
+        }
         let ctx = LAContext()
         var err: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err) else {
@@ -95,6 +108,7 @@ final class BiometricService: BiometricServiceProtocol {
 final class MockBiometricService: BiometricServiceProtocol {
     var biometricType: BiometricType = .faceID
     var isBiometricAvailable: Bool   = true
+    var isSimulationEnabled: Bool    = true
     var shouldSucceed = true
     var shouldThrow: BiometricError? = nil
 

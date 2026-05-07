@@ -14,12 +14,11 @@ final class AppState: ObservableObject {
 
     var userId: String? { currentUser?.uid }
 
-    private let kOnboarding   = "rs_onboarding_done"
     private let kBiometric    = "rs_biometric_enabled"
     private let kBioSetupDone = "rs_bio_setup_done"
 
     init() {
-        hasCompletedOnboarding     = UserDefaults.standard.bool(forKey: "rs_onboarding_done")
+        hasCompletedOnboarding     = false
         biometricEnabled           = UserDefaults.standard.bool(forKey: "rs_biometric_enabled")
         hasCompletedBiometricSetup = UserDefaults.standard.bool(forKey: "rs_bio_setup_done")
         isAuthenticated            = false
@@ -31,7 +30,6 @@ final class AppState: ObservableObject {
 
     func completeOnboarding() {
         hasCompletedOnboarding = true
-        UserDefaults.standard.set(true, forKey: kOnboarding)
     }
 
     func signIn(user: AppUser) {
@@ -50,7 +48,6 @@ final class AppState: ObservableObject {
         pendingUser     = nil
         isAuthenticated = false
         hasCompletedOnboarding = false
-        UserDefaults.standard.set(false, forKey: kOnboarding)
         try? ServiceLocator.shared.authService.signOut()
     }
 

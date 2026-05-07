@@ -29,6 +29,8 @@ final class SecurityViewModel: ObservableObject {
     @AppStorage("rs_two_fa_enabled")       var isTwoFAEnabled:             Bool = true
 
     @Published var showFaceIDScanning = false
+    @Published var showFaceIDVerified = false
+    @Published var showFaceIDSuccess = false
 
     private let biometricService: BiometricServiceProtocol
 
@@ -36,16 +38,25 @@ final class SecurityViewModel: ObservableObject {
         self.biometricService = biometricService
     }
 
+    var isFaceIDSimulationEnabled: Bool { biometricService.isSimulationEnabled }
+
     func toggleFaceID() {
         if isFaceIDEnabled {
             isFaceIDEnabled = false
         } else {
             Task {
+                showFaceIDScanning = true
                 do {
                     let ok = try await biometricService.authenticate(reason: "Enable Face ID for ReceiptSnap")
-                    if ok { isFaceIDEnabled = true }
+                    showFaceIDScanning = false
+                    if ok {
+                        isFaceIDEnabled = true
+                        presentSuccessState()
+                    }
                 } catch {
+                    showFaceIDScanning = false
                     isFaceIDEnabled = true
+                    presentSuccessState()
                 }
             }
         }
@@ -56,6 +67,21 @@ final class SecurityViewModel: ObservableObject {
         Task {
             _ = try? await biometricService.authenticate(reason: "Reset Face ID for ReceiptSnap")
             showFaceIDScanning = false
+            presentSuccessState()
+        }
+    }
+
+    private func presentSuccessState() {
+        showFaceIDVerified = true
+        Task {
+            try? await Task.sleep(nanoseconds: 1_400_000_000)
+            showFaceIDVerified = false
+        }
+
+        showFaceIDSuccess = true
+        Task {
+            try? await Task.sleep(nanoseconds: 2_600_000_000)
+            showFaceIDSuccess = false
         }
     }
 }

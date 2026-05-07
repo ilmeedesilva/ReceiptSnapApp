@@ -21,6 +21,7 @@ final class BiometricViewModel: ObservableObject {
 
     var biometricType:         BiometricType { biometricService.biometricType }
     var isBiometricAvailable:  Bool          { biometricService.isBiometricAvailable }
+    var isBiometricSimulationEnabled: Bool   { biometricService.isSimulationEnabled }
 
 
     private let biometricService: BiometricServiceProtocol
@@ -110,4 +111,3 @@ final class BiometricViewModel: ObservableObject {
         keychain.verifyPasscode(code)
     }
 }
-
