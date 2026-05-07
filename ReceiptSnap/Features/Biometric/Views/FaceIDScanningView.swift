@@ -43,6 +43,13 @@ struct FaceIDScanningView: View {
                 .foregroundColor(.rsTextSecondary)
                 .padding(.top, 6)
 
+            if viewModel.isBiometricSimulationEnabled {
+                Text("Demo simulation in progress")
+                    .font(.system(size: AppTheme.Font.caption, weight: .medium))
+                    .foregroundColor(.rsForestGreen)
+                    .padding(.top, 8)
+            }
+
             if let err = viewModel.errorMessage {
                 Text(err)
                     .font(.system(size: AppTheme.Font.body))

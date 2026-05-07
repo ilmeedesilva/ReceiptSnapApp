@@ -34,6 +34,19 @@ struct SecurityView: View {
                 .animation(.easeInOut(duration: 0.25), value: vm.showFaceIDScanning)
             }
         }
+        .overlay {
+            if vm.showFaceIDVerified {
+                FaceIDVerifiedOverlay(isSimulated: vm.isFaceIDSimulationEnabled)
+                    .transition(.opacity)
+            }
+        }
+        .overlay(alignment: .top) {
+            if vm.showFaceIDSuccess {
+                FaceIDSuccessToast(isSimulated: vm.isFaceIDSimulationEnabled)
+                    .padding(.top, 84)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
         .sheet(isPresented: $showPasscodeEntry) {
             EnterPasscodeView()
         }
@@ -69,7 +82,9 @@ struct SecurityView: View {
                     Text("Face ID")
                         .font(.system(size: AppTheme.Font.body))
                         .foregroundColor(.rsTextPrimary)
-                    Text("Use Face ID to unlock the app")
+                    Text(vm.isFaceIDSimulationEnabled
+                         ? "Simulated Face ID demo ready for presentation"
+                         : "Use Face ID to unlock the app")
                         .font(.system(size: AppTheme.Font.caption))
                         .foregroundColor(.rsTextSecondary)
                 }
@@ -261,6 +276,80 @@ private struct FaceIDScanningOverlay: View {
             }
         }
         .onAppear { scanning = true }
+    }
+}
+
+private struct FaceIDSuccessToast: View {
+
+    let isSimulated: Bool
+
+    var body: some View {
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.rsForestGreen)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Face ID Enabled")
+                    .font(.system(size: AppTheme.Font.body, weight: .semibold))
+                    .foregroundColor(.rsTextPrimary)
+                Text(isSimulated ? "Simulation completed successfully" : "Authentication completed successfully")
+                    .font(.system(size: AppTheme.Font.caption))
+                    .foregroundColor(.rsTextSecondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.vertical, AppTheme.Spacing.sm + 2)
+        .background(Color.white)
+        .cornerRadius(AppTheme.Radius.card)
+        .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 4)
+        .padding(.horizontal, AppTheme.Spacing.md)
+    }
+}
+
+private struct FaceIDVerifiedOverlay: View {
+
+    let isSimulated: Bool
+
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+
+            VStack(spacing: AppTheme.Spacing.lg) {
+                ZStack {
+                    Circle()
+                        .fill(Color.rsLightGreen)
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(appeared ? 1.0 : 0.86)
+                        .animation(.spring(response: 0.45, dampingFraction: 0.75), value: appeared)
+
+                    Image(systemName: "checkmark.shield.fill")
+                        .font(.system(size: 52, weight: .semibold))
+                        .foregroundColor(.rsForestGreen)
+                        .scaleEffect(appeared ? 1.0 : 0.7)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: appeared)
+                }
+
+                VStack(spacing: AppTheme.Spacing.sm) {
+                    Text("Face ID Verified")
+                        .font(.system(size: AppTheme.Font.title, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text(isSimulated
+                         ? "Demo authentication completed successfully"
+                         : "Authentication completed successfully")
+                        .font(.system(size: AppTheme.Font.body))
+                        .foregroundColor(.white.opacity(0.82))
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.horizontal, AppTheme.Spacing.xl)
+        }
+        .onAppear { appeared = true }
     }
 }
 
