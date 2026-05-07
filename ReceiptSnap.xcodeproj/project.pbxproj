@@ -38,10 +38,26 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B122B96F2FACAFB300CA8A6E /* Exceptions for "ReceiptSnap" folder in "ReceiptSnapTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				CoreData/Validation/ValidationTests.swift,
+			);
+			target = B19742512F72753D00FE11D0 /* ReceiptSnapTests */;
+		};
+		B128EFDE2FACB05200F139C1 /* Exceptions for "ReceiptSnap" folder in "ReceiptSnapUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/ReceiptSnapUITests.swift,
+			);
+			target = B197425B2F72753D00FE11D0 /* ReceiptSnapUITests */;
+		};
 		B186D6062F87F696005047D3 /* Exceptions for "ReceiptSnap" folder in "ReceiptSnap" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CoreData/Validation/ValidationTests.swift,
 				Info.plist,
+				Models/ReceiptSnapUITests.swift,
 			);
 			target = B19742422F72753B00FE11D0 /* ReceiptSnap */;
 		};
@@ -52,6 +68,8 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				B186D6062F87F696005047D3 /* Exceptions for "ReceiptSnap" folder in "ReceiptSnap" target */,
+				B122B96F2FACAFB300CA8A6E /* Exceptions for "ReceiptSnap" folder in "ReceiptSnapTests" target */,
+				B128EFDE2FACB05200F139C1 /* Exceptions for "ReceiptSnap" folder in "ReceiptSnapUITests" target */,
 			);
 			path = ReceiptSnap;
 			sourceTree = "<group>";
