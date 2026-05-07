@@ -7,7 +7,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if !appState.hasCompletedOnboarding {
+            if appState.hasCompletedOnboarding {
                 OnboardingView()
             } else if !appState.isAuthenticated {
                 AuthCoordinatorView()

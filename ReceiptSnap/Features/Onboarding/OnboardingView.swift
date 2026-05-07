@@ -10,18 +10,16 @@ struct OnboardingView: View {
             Color.white.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // ── Logo ────────────────────────────────────────────────
+               
                 LogoView()
                     .padding(.top, 56)
 
                 Spacer(minLength: 32)
-
-                // ── Illustration ─────────────────────────────────────────
+          
                 IllustrationView()
 
                 Spacer(minLength: 40)
 
-                // ── Copy ─────────────────────────────────────────────────
                 VStack(spacing: 12) {
                     Text("Easy to Track and Analyze")
                         .font(.system(size: AppTheme.Font.title, weight: .bold))
@@ -38,7 +36,6 @@ struct OnboardingView: View {
 
                 Spacer(minLength: 48)
 
-                // ── CTA ──────────────────────────────────────────────────
                 PrimaryButton(title: "LET'S GO") {
                     withAnimation(.easeInOut(duration: 0.35)) {
                         appState.completeOnboarding()
