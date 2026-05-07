@@ -30,8 +30,19 @@ struct AddReceiptView: View {
     @State private var showSavedSheet:    Bool = false
     @State private var showFullImage:     Bool = false
     @State private var postSaveDest:      PostSaveDestination? = nil
+    @State private var showSaveErrorAlert: Bool = false
+
+    @FocusState private var focusedField: Field?
 
     private enum PostSaveDestination { case dashboard, receipts }
+    private enum Field: Hashable {
+        case merchant
+        case amount
+        case notes
+        case splitName
+        case customAmountYou
+        case customAmountOther
+    }
 
 
     var parsedAmount: Double { Double(amountText) ?? 0 }
@@ -117,6 +128,13 @@ struct AddReceiptView: View {
                 onViewAll:   { postSaveDest = .receipts;  showSavedSheet = false }
             )
             .presentationDetents([.medium])
+        }
+        .alert("Unable to Save Receipt", isPresented: $showSaveErrorAlert) {
+            Button("OK", role: .cancel) {
+                receiptVM.errorMessage = nil
+            }
+        } message: {
+            Text(receiptVM.errorMessage ?? "Please try again.")
         }
         .onChange(of: photosItem) { _, item in
             Task {
@@ -249,6 +267,7 @@ struct AddReceiptView: View {
                     .font(.system(size: AppTheme.Font.caption, weight: .semibold))
                     .foregroundColor(.rsTextSecondary)
                 TextField("Lunch at Blue Bay", text: $merchantName)
+                    .focused($focusedField, equals: .merchant)
                     .rsInputStyle()
             }
 
@@ -263,6 +282,7 @@ struct AddReceiptView: View {
                             .foregroundColor(.rsTextSecondary)
                             .font(.system(size: AppTheme.Font.body))
                         TextField("0.00", text: $amountText)
+                            .focused($focusedField, equals: .amount)
                             .keyboardType(.decimalPad)
                     }
                     .rsInputStyle()
@@ -323,6 +343,7 @@ struct AddReceiptView: View {
                             .padding(.top, AppTheme.Spacing.sm + 2)
                     }
                     TextEditor(text: $notes)
+                        .focused($focusedField, equals: .notes)
                         .font(.system(size: AppTheme.Font.body))
                         .foregroundColor(.rsTextPrimary)
                         .frame(height: 90)
@@ -418,6 +439,7 @@ struct AddReceiptView: View {
 
             HStack {
                 TextField("Enter name", text: $splitWithName)
+                    .focused($focusedField, equals: .splitName)
                     .font(.system(size: AppTheme.Font.body))
                 Image(systemName: "person.badge.plus")
                     .foregroundColor(.rsTextSecondary)
@@ -476,6 +498,7 @@ struct AddReceiptView: View {
                         Text("$")
                             .foregroundColor(.rsTextSecondary)
                         TextField("0.00", text: $customAmountYou)
+                            .focused($focusedField, equals: .customAmountYou)
                             .keyboardType(.decimalPad)
                     }
                     .rsInputStyle()
@@ -488,6 +511,7 @@ struct AddReceiptView: View {
                         Text("$")
                             .foregroundColor(.rsTextSecondary)
                         TextField("0.00", text: $customAmountOther)
+                            .focused($focusedField, equals: .customAmountOther)
                             .keyboardType(.decimalPad)
                     }
                     .rsInputStyle()
@@ -568,8 +592,11 @@ struct AddReceiptView: View {
 
 
     private func handleSave() {
+        focusedField = nil
+
         guard let userId = currentUserId else {
             receiptVM.errorMessage = "Please sign in before saving a receipt."
+            showSaveErrorAlert = true
             return
         }
 
@@ -594,9 +621,12 @@ struct AddReceiptView: View {
         )
 
         Task {
+            try? await Task.sleep(nanoseconds: 150_000_000)
             await receiptVM.addReceipt(receipt, image: selectedImage)
             if receiptVM.errorMessage == nil {
                 showSavedSheet = true
+            } else {
+                showSaveErrorAlert = true
             }
         }
     }

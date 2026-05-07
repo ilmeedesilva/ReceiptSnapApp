@@ -37,45 +37,75 @@ final class DashboardViewModel: ObservableObject {
         let month = cal.component(.month, from: now)
         let year  = cal.component(.year,  from: now)
 
-        guard let uid = userId, !uid.isEmpty else {
-            await loadMockData(); return
+        guard let uid = userId?.trimmingCharacters(in: .whitespacesAndNewlines), !uid.isEmpty else {
+            applyBaselineMockData()
+            return
         }
 
-        do {
-            async let allReceiptsTask = receiptService.fetchReceipts(userId: uid)
-            async let budgetTask = budgetService.fetchBudget(userId: uid, month: month, year: year)
+        async let receiptsTask = receiptService.fetchReceipts(userId: uid)
+        async let budgetTask = budgetService.fetchBudget(userId: uid, month: month, year: year)
 
-            let allReceipts = try await allReceiptsTask
-            let thisMonthReceipts = allReceipts.filter {
-                let components = cal.dateComponents([.month, .year], from: $0.date)
-                return components.month == month && components.year == year
-            }
+        let fetchedReceipts = try? await receiptsTask
+        let fetchedBudget = try? await budgetTask
 
-            budget = try await budgetTask
-            recentReceipts = Array(allReceipts.sorted { $0.date > $1.date }.prefix(5))
-            totalSpending = thisMonthReceipts.reduce(0) { $0 + abs($1.amount) }
-            spendingCategories = budgetService.categoryBreakdown(
-                userId: uid,
-                month: month,
-                year: year,
-                receipts: allReceipts
-            )
-
-            if var b = budget {
-                b.currentSpending = totalSpending
-                budget = b
-            }
-            reports = ReportItem.mockReports()
-        } catch {
-            budget = nil
-            recentReceipts = []
-            totalSpending = 0
-            spendingCategories = []
-            reports = ReportItem.mockReports()
-            errorMessage = "Could not load dashboard data."
+        let receipts = mergedReceipts(saved: fetchedReceipts ?? [])
+        let thisMonthReceipts = receipts.filter {
+            let components = cal.dateComponents([.month, .year], from: $0.date)
+            return components.month == month && components.year == year
         }
+
+        recentReceipts = Array(receipts.sorted { $0.date > $1.date }.prefix(5))
+        totalSpending = thisMonthReceipts.reduce(0) { $0 + abs($1.amount) }
+        spendingCategories = budgetService.categoryBreakdown(
+            userId: uid,
+            month: month,
+            year: year,
+            receipts: receipts
+        )
+
+        if let budget = fetchedBudget {
+            var updatedBudget = budget
+            updatedBudget.currentSpending = totalSpending
+            self.budget = updatedBudget
+        } else if var existingBudget = self.budget {
+            existingBudget.currentSpending = totalSpending
+            self.budget = existingBudget
+        }
+
+        reports = ReportItem.mockReports()
     }
 
+    private func applyBaselineMockData() {
+        let cal   = Calendar.current
+        let now   = Date()
+        let month = cal.component(.month, from: now)
+        let year  = cal.component(.year,  from: now)
+
+        let thisMonthReceipts = MockData.receipts.filter {
+            let c = cal.dateComponents([.month, .year], from: $0.date)
+            return c.month == month && c.year == year
+        }
+
+        let total = thisMonthReceipts.reduce(0) { $0 + abs($1.amount) }
+
+        var grouped: [ReceiptCategory: Double] = [:]
+        for receipt in thisMonthReceipts {
+            grouped[receipt.category, default: 0] += abs(receipt.amount)
+        }
+
+        spendingCategories = ReceiptCategory.allCases.compactMap { cat in
+            let amount = grouped[cat] ?? 0
+            guard amount > 0 else { return nil }
+            return SpendingCategory(category: cat,
+                                    totalAmount: amount,
+                                    percentage: total > 0 ? amount / total : 0)
+        }.sorted { $0.totalAmount > $1.totalAmount }
+
+        totalSpending  = total
+        budget         = MockData.budget
+        recentReceipts = Array(MockData.receipts.sorted { $0.date > $1.date }.prefix(5))
+        reports        = ReportItem.mockReports()
+    }
 
     func setBudget(monthlyLimit: Double, userId: String) {
         Task {
@@ -151,5 +181,14 @@ final class DashboardViewModel: ObservableObject {
     private func currentPeriodString() -> String {
         let f = DateFormatter(); f.dateFormat = "MMMM yyyy"
         return f.string(from: Date())
+    }
+
+    private func mergedReceipts(saved: [Receipt]) -> [Receipt] {
+        (saved + MockData.receipts).sorted { lhs, rhs in
+            if lhs.date == rhs.date {
+                return lhs.createdAt > rhs.createdAt
+            }
+            return lhs.date > rhs.date
+        }
     }
 }

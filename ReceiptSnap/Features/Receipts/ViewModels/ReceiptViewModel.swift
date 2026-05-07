@@ -143,7 +143,13 @@ final class ReceiptViewModel: ObservableObject {
         } catch {
             receipts.removeAll { $0.id == prepared.id }
             deleteFromCoreData(id: prepared.id)
-            errorMessage = "Could not save receipt. Please try again."
+            if let serviceError = error as? ServiceError {
+                errorMessage = serviceError.errorDescription
+            } else if !error.localizedDescription.isEmpty {
+                errorMessage = error.localizedDescription
+            } else {
+                errorMessage = "Could not save receipt. Please try again."
+            }
         }
     }
 

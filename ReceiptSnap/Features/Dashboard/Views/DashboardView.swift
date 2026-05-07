@@ -81,10 +81,16 @@ struct DashboardView: View {
             await reportsViewModel.loadReports(userId: appState.userId)
         }
         .onReceive(NotificationCenter.default.publisher(for: .receiptAdded)) { _ in
-            Task { await viewModel.loadDashboard(userId: appState.userId) }
+            Task {
+                await viewModel.loadDashboard(userId: appState.userId)
+                await reportsViewModel.loadReports(userId: appState.userId)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .receiptsChanged)) { _ in
-            Task { await viewModel.loadDashboard(userId: appState.userId) }
+            Task {
+                await viewModel.loadDashboard(userId: appState.userId)
+                await reportsViewModel.loadReports(userId: appState.userId)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBudgetFeedback)) { _ in
             if viewModel.budget != nil { budgetPath.append(BudgetRoute.budgetFeedback) }
@@ -211,7 +217,9 @@ struct DashboardView: View {
 
     private func wireBudgetCallbacks() {
         budgetViewModel.onBudgetSaved = { budget in
-            viewModel.budget = budget
+            var updatedBudget = budget
+            updatedBudget.currentSpending = viewModel.totalSpending
+            viewModel.budget = updatedBudget
 
             Task { await viewModel.loadDashboard(userId: appState.userId) }
         }

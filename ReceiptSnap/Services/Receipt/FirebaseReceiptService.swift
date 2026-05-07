@@ -15,25 +15,17 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         do {
             let snap = try await db.collection(collection)
                 .whereField("userId", isEqualTo: userId)
-                .order(by: "date", descending: true)
                 .getDocuments()
-            return snap.documents.compactMap { decode($0) }
+            return snap.documents
+                .compactMap { decode($0) }
+                .sorted { $0.date > $1.date }
         } catch {
             throw ServiceError.networkError(error.localizedDescription)
         }
     }
 
     func fetchRecent(userId: String, limit: Int) async throws -> [Receipt] {
-        do {
-            let snap = try await db.collection(collection)
-                .whereField("userId", isEqualTo: userId)
-                .order(by: "date", descending: true)
-                .limit(to: limit)
-                .getDocuments()
-            return snap.documents.compactMap { decode($0) }
-        } catch {
-            throw ServiceError.networkError(error.localizedDescription)
-        }
+        Array(try await fetchReceipts(userId: userId).prefix(limit))
     }
 
     func fetchReceipts(userId: String, month: Int, year: Int) async throws -> [Receipt] {
@@ -47,17 +39,8 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
     }
 
     func fetchReceipts(userId: String, from: Date, to: Date) async throws -> [Receipt] {
-        do {
-            let snap = try await db.collection(collection)
-                .whereField("userId", isEqualTo: userId)
-                .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: from))
-                .whereField("date", isLessThan: Timestamp(date: to))
-                .order(by: "date", descending: true)
-                .getDocuments()
-            return snap.documents.compactMap { decode($0) }
-        } catch {
-            throw ServiceError.networkError(error.localizedDescription)
-        }
+        try await fetchReceipts(userId: userId)
+            .filter { $0.date >= from && $0.date < to }
     }
 
 
@@ -68,8 +51,12 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
 
         var saved = receipt
         if let img = image {
-            let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
-            saved = withImageURL(saved, url: url.absoluteString)
+            do {
+                let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
+                saved = withImageURL(saved, url: url.absoluteString)
+            } catch {
+                saved = withUpdatedAt(saved)
+            }
         }
         try await write(saved)
         return saved
@@ -83,11 +70,15 @@ final class FirebaseReceiptService: ReceiptServiceProtocol {
         var updated = receipt
         updated = withUpdatedAt(updated)
         if let img = image {
-            if let old = receipt.imageURL, let ref = try? storageRef(from: old) {
-                try? await ref.delete()
+            do {
+                let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
+                if let old = receipt.imageURL, let ref = try? storageRef(from: old) {
+                    try? await ref.delete()
+                }
+                updated = withImageURL(updated, url: url.absoluteString)
+            } catch {
+                updated = withUpdatedAt(updated)
             }
-            let url = try await uploadImage(img, userId: userId, receiptId: receipt.id)
-            updated = withImageURL(updated, url: url.absoluteString)
         }
         try await write(updated)
         return updated
