@@ -74,8 +74,8 @@ final class ExpenseSummaryViewModel: ObservableObject {
 
         let receipts: [Receipt]
         if let uid = userId, !uid.isEmpty {
-            receipts = (try? await receiptService.fetchReceipts(userId: uid, month: month, year: year))
-                ?? Receipt.mockReceipts()
+            let savedReceipts = (try? await receiptService.fetchReceipts(userId: uid, month: month, year: year)) ?? []
+            receipts = Receipt.withMockReceipts(savedReceipts)
         } else {
             receipts = Receipt.mockReceipts()
         }
