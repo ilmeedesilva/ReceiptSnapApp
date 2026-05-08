@@ -80,7 +80,7 @@ final class ReceiptViewModel: ObservableObject {
             let remote = try await receiptService.fetchReceipts(userId: uid)
             let remoteIds = Set(remote.map(\.id))
             let localOnly = receipts.filter { !remoteIds.contains($0.id) }
-            receipts = (localOnly + remote).sorted { $0.date > $1.date }
+            receipts = Receipt.withMockReceipts(localOnly + remote)
             saveToCoreData(remote, userId: uid)
         } catch {
             errorMessage = "Sync failed — showing cached data."
@@ -239,7 +239,7 @@ final class ReceiptViewModel: ObservableObject {
         if userId == nil { req.predicate = nil }
         let cached = (try? ctx.fetch(req))?.map { $0.toDomainModel() } ?? []
         if !cached.isEmpty {
-            receipts = cached
+            receipts = Receipt.withMockReceipts(cached)
         } else if receipts.isEmpty {
             receipts = Receipt.mockReceipts()
         }

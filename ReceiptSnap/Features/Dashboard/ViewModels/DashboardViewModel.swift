@@ -48,7 +48,7 @@ final class DashboardViewModel: ObservableObject {
         let fetchedReceipts = try? await receiptsTask
         let fetchedBudget = try? await budgetTask
 
-        let receipts = mergedReceipts(saved: fetchedReceipts ?? [])
+        let receipts = Receipt.withMockReceipts(fetchedReceipts ?? [])
         let thisMonthReceipts = receipts.filter {
             let components = cal.dateComponents([.month, .year], from: $0.date)
             return components.month == month && components.year == year
@@ -70,6 +70,10 @@ final class DashboardViewModel: ObservableObject {
         } else if var existingBudget = self.budget {
             existingBudget.currentSpending = totalSpending
             self.budget = existingBudget
+        } else {
+            var mockBudget = MockData.budget
+            mockBudget.currentSpending = totalSpending
+            self.budget = mockBudget
         }
 
         reports = ReportItem.mockReports()
@@ -181,14 +185,5 @@ final class DashboardViewModel: ObservableObject {
     private func currentPeriodString() -> String {
         let f = DateFormatter(); f.dateFormat = "MMMM yyyy"
         return f.string(from: Date())
-    }
-
-    private func mergedReceipts(saved: [Receipt]) -> [Receipt] {
-        (saved + MockData.receipts).sorted { lhs, rhs in
-            if lhs.date == rhs.date {
-                return lhs.createdAt > rhs.createdAt
-            }
-            return lhs.date > rhs.date
-        }
     }
 }

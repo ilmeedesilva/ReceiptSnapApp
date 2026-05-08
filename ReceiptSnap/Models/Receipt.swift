@@ -73,6 +73,20 @@ struct Receipt: Identifiable, Equatable, Codable {
 
 
     static func mockReceipts() -> [Receipt] { MockData.receipts }
+
+    static func withMockReceipts(_ savedReceipts: [Receipt]) -> [Receipt] {
+        var seenIds = Set<UUID>()
+        return (savedReceipts + mockReceipts())
+            .filter { receipt in
+                seenIds.insert(receipt.id).inserted
+            }
+            .sorted { lhs, rhs in
+                if lhs.date == rhs.date {
+                    return lhs.updatedAt > rhs.updatedAt
+                }
+                return lhs.date > rhs.date
+            }
+    }
 }
 
 
